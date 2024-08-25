@@ -14,15 +14,15 @@ pub fn import_item_records(
     let mut no_longer_relevant_items: HashSet<u32> = HashSet::new();
     for item in read_csv_data::<ItemRecord>("data/en/Item.csv")
         .filter(|item| potentially_relevant_items.contains(&item.id))
-    // TODO check if going over potentially_relevant set would be enough
     {
         if item.can_be_hq {
-            item_stats.entry(item.id, &format!(
-                "Item {{ item_level: {item_level}, can_be_hq: {can_be_hq}, always_collectable: {always_collectable} }}",
-                item_level = item.item_level,
-                can_be_hq = item.can_be_hq,
-                always_collectable = item.always_collectable,
-            ));
+            item_stats.entry(
+                item.id,
+                &format!(
+                    "Item {{ item_level: {item_level} }}",
+                    item_level = item.item_level,
+                ),
+            );
         } else {
             no_longer_relevant_items.insert(item.id);
         }
@@ -52,9 +52,13 @@ fn import_item_names(
     for item in read_csv_data::<ItemRecord>(format!("data/{}/Item.csv", lang))
         .filter(|item| relevant_items.contains(&item.id))
     {
+        let suffix = match item.always_collectable {
+            false => "",
+            true => " \u{e03d}",
+        };
         item_names.entry(
             item.id,
-            &format!("\"{}\"", item.name.replace("<SoftHyphen/>", "")),
+            &format!("\"{}{}\"", item.name.replace("<SoftHyphen/>", ""), suffix),
         );
     }
     let out_path = Path::new(&std::env::var("OUT_DIR")?).join(format!("item_names_{}.rs", lang));

@@ -11,7 +11,7 @@ use web_time::Instant;
 
 use egui::{Align, CursorIcon, FontData, FontDefinitions, FontFamily, Id, Layout, TextStyle};
 use game_data::{
-    action_name, get_initial_quality, get_item_name, get_job_name, Consumable, Locale,
+    action_name, get_initial_quality, get_item_name, get_job_name, Consumable, Locale, CL_ICON_CHAR,
 };
 
 use simulator::Action;
@@ -219,8 +219,18 @@ impl eframe::App for MacroSolverApp {
                             self.solver_config,
                             &self.crafter_config,
                             &self.actions,
-                            match game_data::ITEMS.get(&self.recipe_config.recipe.item_id) {
-                                Some(item) => item.always_collectable,
+                            match game_data::get_item_name(
+                                self.recipe_config.recipe.item_id,
+                                false,
+                                self.locale,
+                            )
+                            .chars()
+                            .last()
+                            {
+                                // TODO fix collectable crafts not being easily detectable
+                                // This workd, but it feels wrong to do this each frame, although it is just once per frame
+                                // maybe being part of game_data::RECIPES would be ideal
+                                Some(char) => char == CL_ICON_CHAR,
                                 None => false,
                             },
                             self.locale,
@@ -430,24 +440,22 @@ impl MacroSolverApp {
             let recipe_ingredients = self.recipe_config.recipe.ingredients;
             if let QualitySource::HqMaterialList(provided_ingredients) = &mut self.recipe_config.quality_source {
                 for (index, ingredient) in recipe_ingredients.into_iter().enumerate() {
-                    if let Some(item) = game_data::ITEMS.get(&ingredient.item_id) {
-                        if item.can_be_hq {
-                            has_hq_ingredient = true;
-                            ui.horizontal(|ui| {
-                                ui.label(get_item_name(ingredient.item_id, false, self.locale));
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    let mut max_placeholder = ingredient.amount;
-                                    ui.add_enabled(false, egui::DragValue::new(&mut max_placeholder));
-                                    ui.monospace("/");
-                                    ui.add(
-                                        egui::DragValue::new(
-                                            &mut provided_ingredients[index],
-                                        )
-                                        .clamp_range(0..=ingredient.amount),
-                                    );
-                                });
+                    if game_data::ITEMS.contains_key(&ingredient.item_id) {
+                        has_hq_ingredient = true;
+                        ui.horizontal(|ui| {
+                            ui.label(get_item_name(ingredient.item_id, false, self.locale));
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                let mut max_placeholder = ingredient.amount;
+                                ui.add_enabled(false, egui::DragValue::new(&mut max_placeholder));
+                                ui.monospace("/");
+                                ui.add(
+                                    egui::DragValue::new(
+                                        &mut provided_ingredients[index],
+                                    )
+                                    .clamp_range(0..=ingredient.amount),
+                                );
                             });
-                        }
+                        });
                     }
                 }
             }

@@ -19,8 +19,6 @@ pub const CL_ICON_CHAR: char = '\u{e03d}';
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
     pub item_level: u16,
-    pub can_be_hq: bool,
-    pub always_collectable: bool,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -120,10 +118,8 @@ pub fn get_initial_quality(recipe: Recipe, hq_ingredients: [u8; 6]) -> u16 {
     let mut max_ilvl = 0;
     let mut provided_ilvl = 0;
     for (index, (item, max_amount)) in ingredients.into_iter().enumerate() {
-        if item.can_be_hq {
-            max_ilvl += max_amount as u16 * item.item_level;
-            provided_ilvl += hq_ingredients[index] as u16 * item.item_level;
-        }
+        max_ilvl += max_amount as u16 * item.item_level;
+        provided_ilvl += hq_ingredients[index] as u16 * item.item_level;
     }
 
     if max_ilvl != 0 {
