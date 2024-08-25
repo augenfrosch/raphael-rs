@@ -64,6 +64,7 @@ pub fn get_item_name(item_id: u32, hq: bool, locale: Locale) -> String {
     };
     let item_entry = ITEMS.get(&item_id);
     let always_collectable = match item_entry {
+        // TODO fix this allways being false, since only can-be-hq ingredients are include in ITEMS now
         Some(item) => item.always_collectable,
         None => false,
     };

@@ -110,7 +110,10 @@ pub fn get_initial_quality(recipe: Recipe, hq_ingredients: [u8; 6]) -> u16 {
         .iter()
         .filter_map(|ingredient| match ingredient.item_id {
             0 => None,
-            id => Some((*ITEMS.get(&id).unwrap(), ingredient.amount)),
+            id => match ITEMS.get(&id) {
+                None => None,
+                Some(item) => Some((*item, ingredient.amount)),
+            },
         })
         .collect();
 

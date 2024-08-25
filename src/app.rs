@@ -219,9 +219,10 @@ impl eframe::App for MacroSolverApp {
                             self.solver_config,
                             &self.crafter_config,
                             &self.actions,
-                            game_data::ITEMS
-                                .get(&self.recipe_config.recipe.item_id)
-                                .unwrap(),
+                            match game_data::ITEMS.get(&self.recipe_config.recipe.item_id) {
+                                Some(item) => item.always_collectable,
+                                None => false,
+                            },
                             self.locale,
                         ));
                         ui.add_space(5.5);

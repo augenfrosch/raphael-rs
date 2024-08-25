@@ -21,12 +21,13 @@ fn main() {
 fn import_game_data() -> Result<(), Box<dyn std::error::Error>> {
     // keep track of relevant item IDs so that we don't serialize items that are never used
     let mut relevant_items: HashSet<u32> = HashSet::new();
+    let mut potentially_relevant_items: HashSet<u32> = HashSet::new();
 
     let rlvls = import_rlvl_records()?;
-    import_recipe_records(&mut relevant_items, &rlvls)?;
+    import_recipe_records(&mut relevant_items, &mut potentially_relevant_items, &rlvls)?;
 
     consumables::import_consumable_records(&mut relevant_items)?;
-    items::import_item_records(relevant_items)?;
+    items::import_item_records(relevant_items, potentially_relevant_items)?;
     Ok(())
 }
 
@@ -49,6 +50,7 @@ fn import_rlvl_records() -> Result<Vec<RecipeLevelRecord>, Box<dyn std::error::E
 
 fn import_recipe_records(
     relevant_items: &mut HashSet<u32>,
+    potentially_relevant_items: &mut HashSet<u32>,
     rlvls: &[RecipeLevelRecord],
 ) -> Result<(), Box<dyn std::error::Error>> {
     fn apply_factor(base: u32, factor: u32) -> u32 {
@@ -64,12 +66,12 @@ fn import_recipe_records(
         }
 
         relevant_items.insert(recipe_record.resulting_item);
-        relevant_items.insert(recipe_record.ingredient_id_0);
-        relevant_items.insert(recipe_record.ingredient_id_1);
-        relevant_items.insert(recipe_record.ingredient_id_2);
-        relevant_items.insert(recipe_record.ingredient_id_3);
-        relevant_items.insert(recipe_record.ingredient_id_4);
-        relevant_items.insert(recipe_record.ingredient_id_5);
+        potentially_relevant_items.insert(recipe_record.ingredient_id_0);
+        potentially_relevant_items.insert(recipe_record.ingredient_id_1);
+        potentially_relevant_items.insert(recipe_record.ingredient_id_2);
+        potentially_relevant_items.insert(recipe_record.ingredient_id_3);
+        potentially_relevant_items.insert(recipe_record.ingredient_id_4);
+        potentially_relevant_items.insert(recipe_record.ingredient_id_5);
 
         let ingredients = format!(
                 "[Ingredient {{ item_id: {}, amount: {} }}, Ingredient {{ item_id: {}, amount: {} }}, Ingredient {{ item_id: {}, amount: {} }}, Ingredient {{ item_id: {}, amount: {} }}, Ingredient {{ item_id: {}, amount: {} }}, Ingredient {{ item_id: {}, amount: {} }}]",

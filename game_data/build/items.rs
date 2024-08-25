@@ -8,22 +8,33 @@ use crate::utils::read_csv_data;
 
 pub fn import_item_records(
     mut relevant_items: HashSet<u32>,
+    mut potentially_relevant_items: HashSet<u32>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut item_stats = phf_codegen::OrderedMap::new();
+    let mut no_longer_relevant_items: HashSet<u32> = HashSet::new();
     for item in read_csv_data::<ItemRecord>("data/en/Item.csv")
-        .filter(|item| relevant_items.contains(&item.id))
+        .filter(|item| potentially_relevant_items.contains(&item.id))
+    // TODO check if going over potentially_relevant set would be enough
     {
-        item_stats.entry(item.id, &format!(
-            "Item {{ item_level: {item_level}, can_be_hq: {can_be_hq}, always_collectable: {always_collectable} }}",
-            item_level = item.item_level,
-            can_be_hq = item.can_be_hq,
-            always_collectable = item.always_collectable,
-        ));
+        if item.can_be_hq {
+            item_stats.entry(item.id, &format!(
+                "Item {{ item_level: {item_level}, can_be_hq: {can_be_hq}, always_collectable: {always_collectable} }}",
+                item_level = item.item_level,
+                can_be_hq = item.can_be_hq,
+                always_collectable = item.always_collectable,
+            ));
+        } else {
+            no_longer_relevant_items.insert(item.id);
+        }
     }
     let out_path = Path::new(&std::env::var("OUT_DIR")?).join("items.rs");
     let mut writer = BufWriter::new(File::create(out_path).unwrap());
     writeln!(writer, "{}", item_stats.build())?;
 
+    for item_id in no_longer_relevant_items {
+        potentially_relevant_items.remove(&item_id);
+    }
+    relevant_items = &relevant_items | &potentially_relevant_items;
     relevant_items.remove(&0);
     import_item_names(&relevant_items, "en")?;
     import_item_names(&relevant_items, "de")?;

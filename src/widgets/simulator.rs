@@ -1,5 +1,5 @@
 use egui::{Align, Color32, Id, Layout, Rounding, Widget};
-use game_data::{action_name, get_job_name, Item, Locale};
+use game_data::{action_name, get_job_name, Locale};
 use simulator::{Action, Settings, SimulationState};
 
 use crate::{
@@ -20,7 +20,7 @@ pub struct Simulator<'a> {
     solver_config: SolverConfig,
     crafter_config: &'a CrafterConfig,
     actions: &'a [Action],
-    item: &'a Item,
+    always_collectable: bool,
     locale: Locale,
 }
 
@@ -31,7 +31,7 @@ impl<'a> Simulator<'a> {
         solver_config: SolverConfig,
         crafter_config: &'a CrafterConfig,
         actions: &'a [Action],
-        item: &'a Item,
+        always_collectable: bool,
         locale: Locale,
     ) -> Self {
         Self {
@@ -40,7 +40,7 @@ impl<'a> Simulator<'a> {
             solver_config,
             crafter_config,
             actions,
-            item,
+            always_collectable,
             locale,
         }
     }
@@ -153,7 +153,7 @@ impl<'a> Widget for Simulator<'a> {
                                         egui::RichText::new("Synthesis failed".to_string())
                                             .strong(),
                                     );
-                                } else if self.item.always_collectable {
+                                } else if self.always_collectable {
                                     let t1 = QualityTarget::CollectableT1
                                         .get_target(self.settings.max_quality);
                                     let t2 = QualityTarget::CollectableT2
