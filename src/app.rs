@@ -20,6 +20,11 @@ use crate::config::{CrafterConfig, QualitySource, QualityTarget, RecipeConfigura
 use crate::widgets::*;
 use crate::worker::BridgeType;
 
+#[cfg(target_arch = "wasm32")]
+const BASE_ASSET_PATH: &str = env!("BASE_URL");
+#[cfg(not(target_arch = "wasm32"))]
+const BASE_ASSET_PATH: &str = "file://./assets";
+
 fn load<T: DeserializeOwned>(cc: &eframe::CreationContext<'_>, key: &'static str, default: T) -> T {
     match cc.storage {
         Some(storage) => eframe::get_value(storage, key).unwrap_or(default),
@@ -33,6 +38,36 @@ pub enum SolverEvent {
     IntermediateSolution(Vec<Action>),
     FinalSolution(Vec<Action>),
 }
+
+#[derive(Debug)]
+enum LoadDataError {
+    Pending,
+    LoadError(egui::load::LoadError),
+}
+
+pub struct Font {
+    name: &'static str,
+    uri: &'static str,
+    high_priority: bool,
+}
+
+pub static FONTS: &[Font] = &[
+    Font {
+        name: "Text_Icons",
+        uri: "../assets/fonts/Text_Icons/Text_Icons.ttf",
+        high_priority: false,
+    },
+    Font {
+        name: "Ubuntu-Light",
+        uri: "/fonts/Ubuntu/Ubuntu-L.ttf",
+        high_priority: true,
+    },
+    Font {
+        name: "japanese_monospace",
+        uri: "/fonts/M_PLUS_1_Code/static/MPLUS1Code-Regular.ttf",
+        high_priority: false,
+    },
+];
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SolverConfig {
@@ -58,6 +93,8 @@ pub struct MacroSolverApp {
     duration: Option<Duration>,
     data_update: Rc<Cell<Option<SolverEvent>>>,
     bridge: BridgeType,
+
+    stored_font_definitions: Option<FontDefinitions>,
 }
 
 impl MacroSolverApp {
@@ -97,12 +134,14 @@ impl MacroSolverApp {
             style.always_scroll_the_only_direction = true;
         });
 
-        Self::load_fonts(&cc.egui_ctx);
-
         let default_recipe_config = RecipeConfiguration {
             recipe: *game_data::RECIPES.last().unwrap(),
             quality_source: QualitySource::HqMaterialList([0; 6]),
         };
+
+        let mut font_definitions = Some(Default::default());
+        MacroSolverApp::load_fonts(&mut font_definitions, &cc.egui_ctx, true);
+        MacroSolverApp::load_fonts(&mut font_definitions, &cc.egui_ctx, false);
 
         Self {
             locale: load(cc, "LOCALE", Locale::EN),
@@ -121,6 +160,8 @@ impl MacroSolverApp {
             duration: None,
             data_update,
             bridge,
+
+            stored_font_definitions: font_definitions,
         }
     }
 }
@@ -128,6 +169,9 @@ impl MacroSolverApp {
 impl eframe::App for MacroSolverApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.stored_font_definitions.is_some() {
+            MacroSolverApp::load_fonts(&mut self.stored_font_definitions, ctx, false);
+        }
         self.solver_update();
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -619,37 +663,122 @@ impl MacroSolverApp {
         });
     }
 
-    fn load_fonts(ctx: &egui::Context) {
-        let mut fonts = FontDefinitions::default();
-        fonts.font_data.insert(
-            String::from("japanese_monospace"),
-            FontData::from_static(include_bytes!(
-                "../assets/fonts/M_PLUS_1_Code/static/MPLUS1Code-Regular.ttf"
-            )),
-        );
-        fonts
-            .families
-            .get_mut(&FontFamily::Proportional)
-            .unwrap()
-            .push("japanese_monospace".to_owned());
-        fonts
-            .families
-            .get_mut(&FontFamily::Monospace)
-            .unwrap()
-            .push("japanese_monospace".to_owned());
+    fn load_data(ctx: &egui::Context, uri: String) -> Result<egui::load::Bytes, LoadDataError> {
+        let load_result = ctx.try_load_bytes(&uri);
+        match load_result {
+            Ok(bytes_poll) => match bytes_poll {
+                egui::load::BytesPoll::Pending { size: _ } => {
+                    return Err(LoadDataError::Pending);
+                }
+                egui::load::BytesPoll::Ready {
+                    size: _,
+                    bytes,
+                    mime,
+                } => {
+                    dbg!(&uri, &mime);
+                    log::debug!("{uri:?}, {mime:?}");
+                    return Ok(bytes.into());
+                }
+            },
+            Err(err) => {
+                return Err(LoadDataError::LoadError(err));
+            }
+        }
+    }
 
-        fonts.font_data.insert(
-            String::from("FFXIV_Lodestone_SSF"),
-            FontData::from_static(include_bytes!(
-                "../assets/fonts/XIV_Icon_Recreations/XIV_Icon_Recreations.ttf"
-            )),
-        );
-        fonts
-            .families
-            .get_mut(&FontFamily::Proportional)
-            .unwrap()
-            .push("FFXIV_Lodestone_SSF".to_owned());
+    fn log_load_data_error(err: LoadDataError) {
+        match err {
+            LoadDataError::Pending => {
+                dbg!(err);
+            }
+            LoadDataError::LoadError(load_error) => {
+                dbg!(load_error);
+            }
+        }
+    }
 
-        ctx.set_fonts(fonts);
+    fn load_font(font: &Font, fonts: &mut FontDefinitions, ctx: &egui::Context) -> bool {
+        if !fonts
+            .families
+            .get(&FontFamily::Proportional)
+            .unwrap()
+            .contains(&font.name.to_string())
+        {
+            let uri = format!("{}{}", BASE_ASSET_PATH, font.uri);
+            let load_result = MacroSolverApp::load_data(ctx, uri);
+            dbg!(&load_result);
+            match load_result {
+                Ok(bytes) => {
+                    fonts.font_data.insert(
+                        String::from(font.name),
+                        FontData::from_owned(bytes.as_ref().to_vec()),
+                    );
+                    let insertion_index = match font.high_priority {
+                        true => 0,
+                        false => fonts.families.get(&FontFamily::Monospace).unwrap().len(),
+                    };
+                    fonts
+                        .families
+                        .get_mut(&FontFamily::Proportional)
+                        .unwrap()
+                        .insert(insertion_index, font.name.to_owned());
+                    fonts
+                        .families
+                        .get_mut(&FontFamily::Monospace)
+                        .unwrap()
+                        .insert(insertion_index, font.name.to_owned());
+                    return true;
+                }
+                Err(err) => {
+                    MacroSolverApp::log_load_data_error(err);
+                }
+            }
+        }
+        false
+    }
+
+    fn load_fonts(
+        stored_font_definitions: &mut Option<FontDefinitions>,
+        ctx: &egui::Context,
+        request_only: bool,
+    ) {
+        if stored_font_definitions.is_none() {
+            return;
+        }
+        let fonts: &mut FontDefinitions = &mut stored_font_definitions.as_mut().unwrap();
+
+        let mut new_fonts_loaded = false;
+
+        if !fonts
+            .families
+            .get(&FontFamily::Proportional)
+            .unwrap()
+            .contains(&"Text_Icons".to_string())
+        {
+            fonts.font_data.insert(
+                String::from("Text_Icons"),
+                FontData::from_static(include_bytes!("../assets/fonts/Text_Icons/Text_Icons.ttf")),
+            );
+            fonts
+                .families
+                .get_mut(&FontFamily::Proportional)
+                .unwrap()
+                .push("Text_Icons".to_owned());
+
+            new_fonts_loaded = true;
+        }
+
+        new_fonts_loaded |= MacroSolverApp::load_font(FONTS.get(1).unwrap(), fonts, ctx);
+
+        new_fonts_loaded |= MacroSolverApp::load_font(FONTS.get(2).unwrap(), fonts, ctx);
+
+        if new_fonts_loaded && !request_only {
+            ctx.set_fonts(fonts.clone());
+            ctx.request_repaint();
+
+            if fonts.families.get(&FontFamily::Proportional).unwrap().len() == FONTS.len() {
+                *stored_font_definitions = None;
+            }
+        }
     }
 }
