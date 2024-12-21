@@ -77,6 +77,8 @@ impl<'a> RecipeSelect<'a> {
             .resolve(ui.style())
             .size
             .max(ui.spacing().interact_size.y);
+        let safe_width = ui.available_width();
+
         let table = egui_extras::TableBuilder::new(ui)
             .auto_shrink(false)
             .striped(true)
@@ -84,7 +86,7 @@ impl<'a> RecipeSelect<'a> {
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .column(Column::auto())
             .column(Column::exact(28.0)) // Column::auto causes jittering when scrolling
-            .column(Column::remainder())
+            .column(Column::exact(safe_width - 86.0))
             .min_scrolled_height(0.0);
         table.body(|body| {
             body.rows(text_height, search_result.len(), |mut row| {
@@ -189,11 +191,11 @@ impl<'a> RecipeSelect<'a> {
                     ui.add_enabled(false, egui::DragValue::new(&mut rlvl.quality_mod));
                 });
                 ui.horizontal(|ui| {
-                    ui.label("Progress per 100% efficiency:");
+                    ui.label(egui::RichText::new("Progress per 100% efficiency:").extra_letter_spacing(-0.15));
                     ui.label(egui::RichText::new(game_settings.base_progress.to_string()).strong());
                 });
                 ui.horizontal(|ui| {
-                    ui.label("Quality per 100% efficiency:");
+                    ui.label(egui::RichText::new("Quality per 100% efficiency:").extra_letter_spacing(-0.15));
                     ui.label(egui::RichText::new(game_settings.base_quality.to_string()).strong());
                 });
             });

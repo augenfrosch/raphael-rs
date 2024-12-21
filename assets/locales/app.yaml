@@ -20,12 +20,34 @@ header:
     en: ☀ Light
   dark:
     en: 🌙 Dark
+  links:
+    en: Links
   github:
     en:  View source on GitHub
   discord:
     en: Join Discord
   ko_fi:
     en: Support me on Ko-fi
+  settings:
+    en: ⚙
+
+layout:
+  manual:
+    en: Manual
+  auto:
+    en: Auto
+  top:
+    en: Top
+  bottom:
+    en: Bottom
+  left:
+    en: Left
+  right:
+    en: Right
+  horizontal:
+    en: Horizontal
+  vertical:
+    en: Vertical
 
 stats_window:
   title:

@@ -56,6 +56,50 @@ pub struct SolverUpdates {
     pub solution_update: Cell<Option<SolverEvent>>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum LayoutSelection {
+    Top,
+    Bottom,
+    Left,
+    Right,
+    Horizontal,
+    Vertical,
+}
+
+impl std::fmt::Display for LayoutSelection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LayoutSelection::Top => write!(f, "top"),
+            LayoutSelection::Bottom => write!(f, "bottom"),
+            LayoutSelection::Left => write!(f, "left"),
+            LayoutSelection::Right => write!(f, "right"),
+            LayoutSelection::Horizontal => write!(f, "horizontal"),
+            LayoutSelection::Vertical => write!(f, "vertical"),
+        }
+    }
+}
+
+
+const LAYOUT_SAFETY_MARGIN : f32 = 24.0;
+const LAYOUT_MINIMUM_SAFE_WIDTH : f32 = 375.0 - LAYOUT_SAFETY_MARGIN;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppLayoutConfig {
+    manual_config: bool,
+    macro_view_location: LayoutSelection,
+    configuration_view_layout: LayoutSelection,
+}
+
+impl Default for AppLayoutConfig {
+    fn default() -> Self {
+        Self {
+            manual_config: false,
+            macro_view_location: LayoutSelection::Right,
+            configuration_view_layout: LayoutSelection::Vertical,
+        }
+    }
+}
+
 pub struct MacroSolverApp {
     locale: Locale,
     recipe_config: RecipeConfiguration,
@@ -64,6 +108,7 @@ pub struct MacroSolverApp {
     crafter_config: CrafterConfig,
     solver_config: SolverConfig,
     macro_view_config: MacroViewConfig,
+    app_layout_config: AppLayoutConfig,
 
     stats_edit_window_open: bool,
     actions: Vec<Action>,
@@ -146,6 +191,7 @@ impl MacroSolverApp {
             crafter_config: load(cc, "CRAFTER_CONFIG", Default::default()),
             solver_config: load(cc, "SOLVER_CONFIG", Default::default()),
             macro_view_config: load(cc, "MACRO_VIEW_CONFIG", Default::default()),
+            app_layout_config: load(cc, "APP_LAYOUT_CONFIG", Default::default()), // TODO test if default can be made addaptive here
 
             stats_edit_window_open: false,
             actions: Vec::new(),
@@ -172,12 +218,13 @@ impl eframe::App for MacroSolverApp {
             Locale::JP => rust_i18n::set_locale("jp"),
         }
 
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        let top_panel = egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.label(egui::RichText::new("Raphael  |  FFXIV Crafting Solver").strong());
                 ui.label(format!("v{}", env!("CARGO_PKG_VERSION")));
 
                 egui::ComboBox::from_id_salt("LOCALE")
+                    .width(70.0)
                     .selected_text(format!("{}", self.locale))
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
@@ -210,35 +257,156 @@ impl eframe::App for MacroSolverApp {
                 });
                 ctx.set_visuals(visuals);
 
-                ui.add(
-                    egui::Hyperlink::from_label_and_url(
-                        t!("header.github"),
-                        "https://github.com/KonaeAkira/raphael-rs",
-                    )
-                    .open_in_new_tab(true),
-                );
-                ui.label("/");
-                ui.add(
-                    egui::Hyperlink::from_label_and_url(
-                        t!("header.discord"),
-                        "https://discord.com/invite/m2aCy3y8he",
-                    )
-                    .open_in_new_tab(true),
-                );
-                ui.label("/");
-                ui.add(
-                    egui::Hyperlink::from_label_and_url(
-                        t!("header.ko_fi"),
-                        "https://ko-fi.com/konaeakira",
-                    )
-                    .open_in_new_tab(true),
-                );
-                ui.with_layout(
-                    Layout::right_to_left(Align::Center),
-                    egui::warn_if_debug_build,
-                );
+                ui.menu_button(egui::RichText::new(t!("header.links")).color(ui.visuals().hyperlink_color), |ui| { // TODO fix header and make this not suck
+                    ui.add(
+                        egui::Hyperlink::from_label_and_url(
+                            t!("header.github"),
+                            "https://github.com/KonaeAkira/raphael-rs",
+                        )
+                        .open_in_new_tab(true),
+                    );
+                    ui.add(
+                        egui::Hyperlink::from_label_and_url(
+                            t!("header.discord"),
+                            "https://discord.com/invite/m2aCy3y8he",
+                        )
+                        .open_in_new_tab(true),
+                    );
+                    ui.add(
+                        egui::Hyperlink::from_label_and_url(
+                            t!("header.ko_fi"),
+                            "https://ko-fi.com/konaeakira",
+                        )
+                        .open_in_new_tab(true),
+                    );
+                });
+
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    ui.menu_button(t!("header.settings"), |ui| {
+                        // workaround for an issue when an `egui::ComboBox`'s options are above another ui element
+                        // which would "eat" the input causing the context menu to close without selecting the option.
+                        // Using ComboBox inside a menu seems to be broken, see e.g. https://github.com/emilk/egui/issues/4153
+                        ui.set_min_height(160.0);
+
+                        let mut pixels_per_point = ctx.zoom_factor();
+                        ui.add(egui::Slider::new(&mut pixels_per_point, 0.1..=2.0));
+                        if ctx.pixels_per_point() != pixels_per_point {
+                            ctx.set_zoom_factor(pixels_per_point);
+                        }
+
+                        ui.heading("Layout");
+                        ui.horizontal(|ui| {
+                            ui.radio_value(
+                                &mut self.app_layout_config.manual_config,
+                                false,
+                                t!("layout.auto"),
+                            );
+                            ui.radio_value(
+                                &mut self.app_layout_config.manual_config,
+                                true,
+                                t!("layout.manual"),
+                            );
+                        });
+                        ui.add_enabled_ui(self.app_layout_config.manual_config, |ui| {
+                            ui.label(t!("label.macro"));
+                            egui::ComboBox::from_id_salt("APP_LAYOUT_CONFIG_1")
+                                .selected_text(t!(format!(
+                                    "layout.{}",
+                                    self.app_layout_config.macro_view_location
+                                )))
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(
+                                        &mut self.app_layout_config.macro_view_location,
+                                        LayoutSelection::Left,
+                                        t!("layout.left"),
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.app_layout_config.macro_view_location,
+                                        LayoutSelection::Right,
+                                        t!("layout.right"),
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.app_layout_config.macro_view_location,
+                                        LayoutSelection::Bottom,
+                                        t!("layout.bottom"),
+                                    );
+                                });
+
+                            ui.label("Configuration");
+                            egui::ComboBox::from_id_salt("APP_LAYOUT_CONFIG_2")
+                                .selected_text(t!(format!(
+                                    "layout.{}",
+                                    self.app_layout_config.configuration_view_layout
+                                )))
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(
+                                        &mut self.app_layout_config.configuration_view_layout,
+                                        LayoutSelection::Horizontal,
+                                        t!("layout.horizontal"),
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.app_layout_config.configuration_view_layout,
+                                        LayoutSelection::Vertical,
+                                        t!("layout.vertical"),
+                                    );
+                                });
+                        });
+                    });
+
+                    egui::warn_if_debug_build(ui);
+                });
             });
         });
+
+        let app_layout = match self.app_layout_config.manual_config {
+            true => self.app_layout_config.clone(),
+            false => Default::default(),
+        };
+
+        log::debug!("{:?}", ctx.screen_rect().size());
+        log::debug!("{:?}; {:?}; {:?}", ctx.pixels_per_point(), ctx.zoom_factor(), ctx.native_pixels_per_point());
+        log::debug!("{:?}",ctx.screen_rect());
+
+        match app_layout.macro_view_location {
+            LayoutSelection::Bottom => {
+                egui::TopBottomPanel::bottom("bottom_panel")
+                    .resizable(false)
+                    .show(ctx, |ui| {
+                        ui.set_max_height(
+                            ctx.screen_rect().height() - top_panel.response.rect.height(),
+                        );
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            ui.add(MacroView::new(
+                                &mut self.actions,
+                                &mut self.macro_view_config,
+                                self.locale,
+                                false,
+                            ));
+                        });
+                    });
+            }
+            LayoutSelection::Left | LayoutSelection::Right => {
+                let macro_panel = match app_layout.macro_view_location {
+                    LayoutSelection::Left => egui::SidePanel::left("side_panel"),
+                    LayoutSelection::Right | _ => egui::SidePanel::right("side_panel"),
+                };
+
+                macro_panel.resizable(false).show(ctx, |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.add_sized(
+                            [310.0, 733.0],
+                            MacroView::new(
+                                &mut self.actions,
+                                &mut self.macro_view_config,
+                                self.locale,
+                                true,
+                            ),
+                        );
+                    });
+                });
+            }
+            _ => log::debug!("{:?}", app_layout.macro_view_location),
+        }
 
         let game_settings = game_data::get_game_settings(
             self.recipe_config.recipe,
@@ -258,7 +426,12 @@ impl eframe::App for MacroSolverApp {
             egui::ScrollArea::both().show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.with_layout(Layout::top_down_justified(Align::TOP), |ui| {
-                        ui.set_max_width(885.0);
+                        if app_layout.configuration_view_layout == LayoutSelection::Horizontal {
+                            ui.set_max_width(885.0f32.min(ctx.screen_rect().width() - LAYOUT_SAFETY_MARGIN));
+                        } else {
+                            ui.set_max_width(885.0);
+                        }
+                        ui.set_min_width(LAYOUT_MINIMUM_SAFE_WIDTH);
                         ui.add(Simulator::new(
                             &game_settings,
                             initial_quality,
@@ -274,7 +447,8 @@ impl eframe::App for MacroSolverApp {
                         ui.horizontal(|ui| {
                             ui.vertical(|ui| {
                                 ui.push_id("RECIPE_SELECT", |ui| {
-                                    ui.set_max_width(612.0);
+                                    ui.set_max_width(612.0f32.min(ctx.screen_rect().width() - LAYOUT_SAFETY_MARGIN));
+                                    ui.set_min_width(LAYOUT_MINIMUM_SAFE_WIDTH);
                                     ui.set_max_height(212.0);
                                     ui.add_enabled(
                                         !self.solver_pending,
@@ -290,7 +464,8 @@ impl eframe::App for MacroSolverApp {
                                 });
                                 ui.add_space(5.0);
                                 ui.push_id("FOOD_SELECT", |ui| {
-                                    ui.set_max_width(612.0);
+                                    ui.set_max_width(612.0f32.min(ctx.screen_rect().width() - LAYOUT_SAFETY_MARGIN));
+                                    ui.set_min_width(LAYOUT_MINIMUM_SAFE_WIDTH);
                                     ui.set_max_height(172.0);
                                     ui.add_enabled(
                                         !self.solver_pending,
@@ -304,7 +479,8 @@ impl eframe::App for MacroSolverApp {
                                 });
                                 ui.add_space(5.0);
                                 ui.push_id("POTION_SELECT", |ui| {
-                                    ui.set_max_width(612.0);
+                                    ui.set_max_width(612.0f32.min(ctx.screen_rect().width() - LAYOUT_SAFETY_MARGIN));
+                                    ui.set_min_width(LAYOUT_MINIMUM_SAFE_WIDTH);
                                     ui.set_max_height(172.0);
                                     ui.add_enabled(
                                         !self.solver_pending,
@@ -318,16 +494,32 @@ impl eframe::App for MacroSolverApp {
                                 });
                             });
 
-                            ui.group(|ui| {
-                                ui.set_height(560.0);
-                                self.draw_config_and_results_widget(ui)
-                            });
+                            if app_layout.configuration_view_layout == LayoutSelection::Vertical {
+                                ui.group(|ui| {
+                                    ui.set_height(560.0);
+                                    self.draw_config_and_results_widget(
+                                        ui,
+                                        Layout::top_down(Align::Min),
+                                    )
+                                });
+                            }
                         });
+
+                        if app_layout.configuration_view_layout == LayoutSelection::Horizontal {
+                            ui.add_space(5.0);
+                            ui.set_min_width(LAYOUT_MINIMUM_SAFE_WIDTH);
+                            ui.group(|ui| {
+                                self.draw_config_and_results_widget(
+                                    ui,
+                                    Layout::left_to_right(Align::Min),
+                                )
+                            });
+                        }
                     });
-                    ui.add_sized(
-                        [320.0, 733.0],
-                        MacroView::new(&mut self.actions, &mut self.macro_view_config, self.locale),
-                    );
+                    // ui.add_sized(
+                    //     [320.0, 733.0],
+                    //     MacroView::new(&mut self.actions, &mut self.macro_view_config, self.locale),
+                    // );
                     // fill remaining horizontal space
                     ui.with_layout(Layout::right_to_left(Align::Center), |_| {});
                 });
@@ -357,6 +549,7 @@ impl eframe::App for MacroSolverApp {
         eframe::set_value(storage, "CRAFTER_CONFIG", &self.crafter_config);
         eframe::set_value(storage, "SOLVER_CONFIG", &self.solver_config);
         eframe::set_value(storage, "MACRO_VIEW_CONFIG", &self.macro_view_config);
+        eframe::set_value(storage, "APP_LAYOUT_CONFIG", &self.app_layout_config);
     }
 
     fn auto_save_interval(&self) -> std::time::Duration {
@@ -403,286 +596,360 @@ impl MacroSolverApp {
         }
     }
 
-    fn draw_config_and_results_widget(&mut self, ui: &mut egui::Ui) {
-        ui.vertical(|ui| {
-            ui.add_enabled_ui(!self.solver_pending, |ui| {
-                self.draw_configuration_widget(ui);
-            });
-            ui.add_space(5.5);
-            self.draw_results_widget(ui);
+    fn draw_config_and_results_widget(&mut self, ui: &mut egui::Ui, layout: Layout) {
+        ui.with_layout(layout, |ui| {
+            match layout.main_dir() {
+                egui::Direction::LeftToRight | egui::Direction::RightToLeft => {
+                    ui.vertical(|ui| {
+                        ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
+                            ui.add_enabled_ui(!self.solver_pending, |ui| {
+                                ui.label(egui::RichText::new("Configuration").strong());
+                            });
+                            self.draw_results_widget(ui);
+                        });
+                        ui.add_enabled_ui(!self.solver_pending, |ui| {
+                            ui.separator();
+                            ui.with_layout(layout, |ui| self.draw_configuration_widget(ui, layout));
+                        });
+                    });
+                }
+                egui::Direction::TopDown | egui::Direction::BottomUp => {
+                    ui.add_enabled_ui(!self.solver_pending, |ui| {
+                        ui.label(egui::RichText::new("Configuration").strong());
+                        ui.separator();
+                        self.draw_configuration_widget(ui, layout);
+                    });
+                    self.draw_results_widget(ui);
+                }
+            }
+            //ui.add_space(5.5);
+
         });
     }
 
-    fn draw_configuration_widget(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(egui::RichText::new("Configuration").strong());
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.style_mut().spacing.item_spacing = [4.0, 4.0].into();
-                if ui.button("Edit").clicked() {
-                    self.stats_edit_window_open = true;
-                }
-                egui::ComboBox::from_id_salt("SELECTED_JOB")
-                    .width(20.0)
-                    .selected_text(get_job_name(self.crafter_config.selected_job, self.locale))
-                    .show_ui(ui, |ui| {
-                        for i in 0..8 {
-                            ui.selectable_value(
-                                &mut self.crafter_config.selected_job,
-                                i,
-                                get_job_name(i, self.locale),
-                            );
-                        }
+    fn draw_configuration_widget(&mut self, ui: &mut egui::Ui, layout: Layout) {
+        let mut two_section_layout = layout;
+        let mut section_width = (ui.available_width() - LAYOUT_SAFETY_MARGIN) * 0.5;
+        if ui.available_width() < (500.0) {
+            section_width = ui.available_width() * 0.96;
+            two_section_layout = Layout::top_down(Align::Min);
+        }
+
+        ui.vertical(|ui| {
+            ui.with_layout(two_section_layout, |ui| {
+                ui.vertical(|ui| {
+                    if two_section_layout.is_horizontal() {
+                        ui.set_max_width(section_width)
+                    }
+                    ui.horizontal(|ui| {
+                        ui.label(egui::RichText::new(t!("label.crafter_stats")).strong());
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.style_mut().spacing.item_spacing = [21.0, 4.0].into();
+                            if ui.button("Edit").clicked() {
+                                self.stats_edit_window_open = true;
+                            }
+                            egui::ComboBox::from_id_salt("SELECTED_JOB")
+                                .width(20.0)
+                                .selected_text(get_job_name(
+                                    self.crafter_config.selected_job,
+                                    self.locale,
+                                ))
+                                .show_ui(ui, |ui| {
+                                    for i in 0..8 {
+                                        ui.selectable_value(
+                                            &mut self.crafter_config.selected_job,
+                                            i,
+                                            get_job_name(i, self.locale),
+                                        );
+                                    }
+                                });
+                        });
                     });
-            });
-        });
-        ui.separator();
-
-        ui.label(egui::RichText::new(t!("label.crafter_stats")).strong());
-        ui.horizontal(|ui| {
-            ui.label(format!("{}:", t!("craftsmanship")));
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.add_enabled(
-                    false,
-                    egui::DragValue::new(&mut game_data::craftsmanship_bonus(
-                        self.crafter_config.active_stats().craftsmanship,
-                        &[self.selected_food, self.selected_potion],
-                    )),
-                );
-                ui.monospace("+");
-                ui.add(
-                    egui::DragValue::new(&mut self.crafter_config.active_stats_mut().craftsmanship)
-                        .range(0..=9999),
-                );
-            });
-        });
-        ui.horizontal(|ui| {
-            ui.label(format!("{}:", t!("control")));
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.add_enabled(
-                    false,
-                    egui::DragValue::new(&mut game_data::control_bonus(
-                        self.crafter_config.active_stats().control,
-                        &[self.selected_food, self.selected_potion],
-                    )),
-                );
-                ui.monospace("+");
-                ui.add(
-                    egui::DragValue::new(&mut self.crafter_config.active_stats_mut().control)
-                        .range(0..=9999),
-                );
-            });
-        });
-        ui.horizontal(|ui| {
-            ui.label(format!("{}:", t!("cp")));
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.add_enabled(
-                    false,
-                    egui::DragValue::new(&mut game_data::cp_bonus(
-                        self.crafter_config.active_stats().cp,
-                        &[self.selected_food, self.selected_potion],
-                    )),
-                );
-                ui.monospace("+");
-                ui.add(
-                    egui::DragValue::new(&mut self.crafter_config.active_stats_mut().cp)
-                        .range(0..=999),
-                );
-            });
-        });
-        ui.horizontal(|ui| {
-            ui.label(format!("{}:", t!("job_level")));
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.add(
-                    egui::DragValue::new(&mut self.crafter_config.active_stats_mut().level)
-                        .range(1..=100),
-                );
-            });
-        });
-        ui.separator();
-
-        ui.label(egui::RichText::new(t!("label.hq_materials")).strong());
-        let mut has_hq_ingredient = false;
-        let recipe_ingredients = self.recipe_config.recipe.ingredients;
-        if let QualitySource::HqMaterialList(provided_ingredients) =
-            &mut self.recipe_config.quality_source
-        {
-            for (index, ingredient) in recipe_ingredients.into_iter().enumerate() {
-                if let Some(item) = game_data::ITEMS.get(&ingredient.item_id) {
-                    if item.can_be_hq {
-                        has_hq_ingredient = true;
-                        ui.horizontal(|ui| {
-                            ui.add(ItemNameLabel::new(ingredient.item_id, false, self.locale));
-                            ui.with_layout(
-                                Layout::right_to_left(Align::Center),
-                                |ui: &mut egui::Ui| {
-                                    let mut max_placeholder = ingredient.amount;
-                                    ui.add_enabled(
-                                        false,
-                                        egui::DragValue::new(&mut max_placeholder),
-                                    );
-                                    ui.monospace("/");
-                                    ui.add(
-                                        egui::DragValue::new(&mut provided_ingredients[index])
-                                            .range(0..=ingredient.amount),
-                                    );
-                                },
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{}:", t!("craftsmanship")));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.add_enabled(
+                                false,
+                                egui::DragValue::new(&mut game_data::craftsmanship_bonus(
+                                    self.crafter_config.active_stats().craftsmanship,
+                                    &[self.selected_food, self.selected_potion],
+                                )),
+                            );
+                            ui.monospace("+");
+                            ui.add(
+                                egui::DragValue::new(
+                                    &mut self.crafter_config.active_stats_mut().craftsmanship,
+                                )
+                                .range(0..=9999),
                             );
                         });
-                    }
-                }
-            }
-        }
-        if !has_hq_ingredient {
-            ui.label(t!("label.none"));
-        }
-        ui.separator();
-
-        ui.label(egui::RichText::new(t!("label.actions")).strong());
-        if self.crafter_config.active_stats().level >= Manipulation::LEVEL_REQUIREMENT {
-            ui.add(egui::Checkbox::new(
-                &mut self.crafter_config.active_stats_mut().manipulation,
-                format!("{}", action_name(Action::Manipulation, self.locale)),
-            ));
-        } else {
-            ui.add_enabled(
-                false,
-                egui::Checkbox::new(
-                    &mut false,
-                    format!("{}", action_name(Action::Manipulation, self.locale)),
-                ),
-            );
-        }
-        if self.crafter_config.active_stats().level >= HeartAndSoul::LEVEL_REQUIREMENT {
-            ui.add(egui::Checkbox::new(
-                &mut self.crafter_config.active_stats_mut().heart_and_soul,
-                format!("{}", action_name(Action::HeartAndSoul, self.locale)),
-            ));
-        } else {
-            ui.add_enabled(
-                false,
-                egui::Checkbox::new(
-                    &mut false,
-                    format!("{}", action_name(Action::HeartAndSoul, self.locale)),
-                ),
-            );
-        }
-        if self.crafter_config.active_stats().level >= QuickInnovation::LEVEL_REQUIREMENT {
-            ui.add(egui::Checkbox::new(
-                &mut self.crafter_config.active_stats_mut().quick_innovation,
-                format!("{}", action_name(Action::QuickInnovation, self.locale)),
-            ));
-        } else {
-            ui.add_enabled(
-                false,
-                egui::Checkbox::new(
-                    &mut false,
-                    format!("{}", action_name(Action::QuickInnovation, self.locale)),
-                ),
-            );
-        }
-        ui.separator();
-
-        ui.label(egui::RichText::new(t!("label.solver_settings")).strong());
-        ui.horizontal(|ui| {
-            ui.label(t!("label.target_quality"));
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.style_mut().spacing.item_spacing = [4.0, 4.0].into();
-                let game_settings = game_data::get_game_settings(
-                    self.recipe_config.recipe,
-                    self.crafter_config.crafter_stats[self.crafter_config.selected_job as usize],
-                    self.selected_food,
-                    self.selected_potion,
-                    self.solver_config.adversarial,
-                );
-                let mut current_value = self
-                    .solver_config
-                    .quality_target
-                    .get_target(game_settings.max_quality);
-                match &mut self.solver_config.quality_target {
-                    QualityTarget::Custom(value) => {
-                        ui.add(egui::DragValue::new(value));
-                    }
-                    _ => {
-                        ui.add_enabled(false, egui::DragValue::new(&mut current_value));
-                    }
-                };
-                egui::ComboBox::from_id_salt("TARGET_QUALITY")
-                    .selected_text(format!("{}", self.solver_config.quality_target))
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(
-                            &mut self.solver_config.quality_target,
-                            QualityTarget::Zero,
-                            format!("{}", QualityTarget::Zero),
-                        );
-                        ui.selectable_value(
-                            &mut self.solver_config.quality_target,
-                            QualityTarget::CollectableT1,
-                            format!("{}", QualityTarget::CollectableT1),
-                        );
-                        ui.selectable_value(
-                            &mut self.solver_config.quality_target,
-                            QualityTarget::CollectableT2,
-                            format!("{}", QualityTarget::CollectableT2),
-                        );
-                        ui.selectable_value(
-                            &mut self.solver_config.quality_target,
-                            QualityTarget::CollectableT3,
-                            format!("{}", QualityTarget::CollectableT3),
-                        );
-                        ui.selectable_value(
-                            &mut self.solver_config.quality_target,
-                            QualityTarget::Full,
-                            format!("{}", QualityTarget::Full),
-                        );
-                        ui.selectable_value(
-                            &mut self.solver_config.quality_target,
-                            QualityTarget::Custom(current_value),
-                            format!("{}", QualityTarget::Custom(0)),
-                        )
                     });
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{}:", t!("control")));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.add_enabled(
+                                false,
+                                egui::DragValue::new(&mut game_data::control_bonus(
+                                    self.crafter_config.active_stats().control,
+                                    &[self.selected_food, self.selected_potion],
+                                )),
+                            );
+                            ui.monospace("+");
+                            ui.add(
+                                egui::DragValue::new(
+                                    &mut self.crafter_config.active_stats_mut().control,
+                                )
+                                .range(0..=9999),
+                            );
+                        });
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{}:", t!("cp")));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.add_enabled(
+                                false,
+                                egui::DragValue::new(&mut game_data::cp_bonus(
+                                    self.crafter_config.active_stats().cp,
+                                    &[self.selected_food, self.selected_potion],
+                                )),
+                            );
+                            ui.monospace("+");
+                            ui.add(
+                                egui::DragValue::new(
+                                    &mut self.crafter_config.active_stats_mut().cp,
+                                )
+                                .range(0..=999),
+                            );
+                        });
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{}:", t!("job_level")));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.add(
+                                egui::DragValue::new(
+                                    &mut self.crafter_config.active_stats_mut().level,
+                                )
+                                .range(1..=100),
+                            );
+                        });
+                    });
+                });
+                ui.separator();
+
+                ui.vertical(|ui| {
+                    if two_section_layout.is_horizontal() {
+                        ui.set_max_width(section_width)
+                    };
+                    ui.label(egui::RichText::new(t!("label.hq_materials")).strong());
+                    let mut has_hq_ingredient = false;
+                    let recipe_ingredients = self.recipe_config.recipe.ingredients;
+                    if let QualitySource::HqMaterialList(provided_ingredients) =
+                        &mut self.recipe_config.quality_source
+                    {
+                        for (index, ingredient) in recipe_ingredients.into_iter().enumerate() {
+                            if let Some(item) = game_data::ITEMS.get(&ingredient.item_id) {
+                                if item.can_be_hq {
+                                    has_hq_ingredient = true;
+                                    ui.horizontal(|ui| {
+                                        ui.add(ItemNameLabel::new(
+                                            ingredient.item_id,
+                                            false,
+                                            self.locale,
+                                        ));
+                                        ui.with_layout(
+                                            Layout::right_to_left(Align::Center),
+                                            |ui: &mut egui::Ui| {
+                                                let mut max_placeholder = ingredient.amount;
+                                                ui.add_enabled(
+                                                    false,
+                                                    egui::DragValue::new(&mut max_placeholder),
+                                                );
+                                                ui.monospace("/");
+                                                ui.add(
+                                                    egui::DragValue::new(
+                                                        &mut provided_ingredients[index],
+                                                    )
+                                                    .range(0..=ingredient.amount),
+                                                );
+                                            },
+                                        );
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    if !has_hq_ingredient {
+                        ui.label(t!("label.none"));
+                    }
+                });
+            });
+            ui.separator();
+
+            ui.with_layout(two_section_layout, |ui| {
+                ui.vertical(|ui| {
+                    if two_section_layout.is_horizontal() {
+                        ui.set_width(section_width)
+                    };
+                    ui.label(egui::RichText::new(t!("label.actions")).strong());
+                    if self.crafter_config.active_stats().level >= Manipulation::LEVEL_REQUIREMENT {
+                        ui.add(egui::Checkbox::new(
+                            &mut self.crafter_config.active_stats_mut().manipulation,
+                            format!("{}", action_name(Action::Manipulation, self.locale)),
+                        ));
+                    } else {
+                        ui.add_enabled(
+                            false,
+                            egui::Checkbox::new(
+                                &mut false,
+                                format!("{}", action_name(Action::Manipulation, self.locale)),
+                            ),
+                        );
+                    }
+                    if self.crafter_config.active_stats().level >= HeartAndSoul::LEVEL_REQUIREMENT {
+                        ui.add(egui::Checkbox::new(
+                            &mut self.crafter_config.active_stats_mut().heart_and_soul,
+                            format!("{}", action_name(Action::HeartAndSoul, self.locale)),
+                        ));
+                    } else {
+                        ui.add_enabled(
+                            false,
+                            egui::Checkbox::new(
+                                &mut false,
+                                format!("{}", action_name(Action::HeartAndSoul, self.locale)),
+                            ),
+                        );
+                    }
+                    if self.crafter_config.active_stats().level
+                        >= QuickInnovation::LEVEL_REQUIREMENT
+                    {
+                        ui.add(egui::Checkbox::new(
+                            &mut self.crafter_config.active_stats_mut().quick_innovation,
+                            format!("{}", action_name(Action::QuickInnovation, self.locale)),
+                        ));
+                    } else {
+                        ui.add_enabled(
+                            false,
+                            egui::Checkbox::new(
+                                &mut false,
+                                format!("{}", action_name(Action::QuickInnovation, self.locale)),
+                            ),
+                        );
+                    }
+                });
+                ui.separator();
+
+                ui.vertical(|ui| {
+                    if two_section_layout.is_horizontal() {
+                        ui.set_max_width(section_width)
+                    };
+                    ui.label(egui::RichText::new(t!("label.solver_settings")).strong());
+                    ui.horizontal(|ui| {
+                        ui.label(t!("label.target_quality"));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.style_mut().spacing.item_spacing = [4.0, 4.0].into();
+                            let game_settings = game_data::get_game_settings(
+                                self.recipe_config.recipe,
+                                self.crafter_config.crafter_stats
+                                    [self.crafter_config.selected_job as usize],
+                                self.selected_food,
+                                self.selected_potion,
+                                self.solver_config.adversarial,
+                            );
+                            let mut current_value = self
+                                .solver_config
+                                .quality_target
+                                .get_target(game_settings.max_quality);
+                            match &mut self.solver_config.quality_target {
+                                QualityTarget::Custom(value) => {
+                                    ui.add(egui::DragValue::new(value));
+                                }
+                                _ => {
+                                    ui.add_enabled(false, egui::DragValue::new(&mut current_value));
+                                }
+                            };
+                            egui::ComboBox::from_id_salt("TARGET_QUALITY")
+                                .selected_text(format!("{}", self.solver_config.quality_target))
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(
+                                        &mut self.solver_config.quality_target,
+                                        QualityTarget::Zero,
+                                        format!("{}", QualityTarget::Zero),
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.solver_config.quality_target,
+                                        QualityTarget::CollectableT1,
+                                        format!("{}", QualityTarget::CollectableT1),
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.solver_config.quality_target,
+                                        QualityTarget::CollectableT2,
+                                        format!("{}", QualityTarget::CollectableT2),
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.solver_config.quality_target,
+                                        QualityTarget::CollectableT3,
+                                        format!("{}", QualityTarget::CollectableT3),
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.solver_config.quality_target,
+                                        QualityTarget::Full,
+                                        format!("{}", QualityTarget::Full),
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.solver_config.quality_target,
+                                        QualityTarget::Custom(current_value),
+                                        format!("{}", QualityTarget::Custom(0)),
+                                    )
+                                });
+                        });
+                    });
+
+                    ui.horizontal(|ui| {
+                        ui.checkbox(
+                            &mut self.solver_config.backload_progress,
+                            t!("label.backload_progress"),
+                        );
+                        ui.add(HelpText::new(t!("info.backload_progress")));
+                    });
+
+                    if self.recipe_config.recipe.is_expert {
+                        self.solver_config.adversarial = false;
+                    }
+                    ui.horizontal(|ui| {
+                        ui.add_enabled(
+                            !self.recipe_config.recipe.is_expert,
+                            egui::Checkbox::new(
+                                &mut self.solver_config.adversarial,
+                                t!("label.adversarial"),
+                            ),
+                        );
+                        ui.add(HelpText::new(t!("info.adversarial")));
+                    });
+                    if self.solver_config.adversarial {
+                        ui.label(
+                            egui::RichText::new(Self::experimental_warning_text())
+                                .small()
+                                .color(ui.visuals().warn_fg_color),
+                        );
+                    }
+
+                    ui.horizontal(|ui| {
+                        ui.checkbox(
+                            &mut self.solver_config.minimize_steps,
+                            t!("label.min_steps"),
+                        );
+                        ui.add(HelpText::new(t!("info.min_steps")));
+                    });
+                    if self.solver_config.minimize_steps {
+                        ui.label(
+                            egui::RichText::new(Self::experimental_warning_text())
+                                .small()
+                                .color(ui.visuals().warn_fg_color),
+                        );
+                    }
+                });
             });
         });
-
-        ui.horizontal(|ui| {
-            ui.checkbox(
-                &mut self.solver_config.backload_progress,
-                t!("label.backload_progress"),
-            );
-            ui.add(HelpText::new(t!("info.backload_progress")));
-        });
-
-        if self.recipe_config.recipe.is_expert {
-            self.solver_config.adversarial = false;
-        }
-        ui.horizontal(|ui| {
-            ui.add_enabled(
-                !self.recipe_config.recipe.is_expert,
-                egui::Checkbox::new(&mut self.solver_config.adversarial, t!("label.adversarial")),
-            );
-            ui.add(HelpText::new(t!("info.adversarial")));
-        });
-        if self.solver_config.adversarial {
-            ui.label(
-                egui::RichText::new(Self::experimental_warning_text())
-                    .small()
-                    .color(ui.visuals().warn_fg_color),
-            );
-        }
-
-        ui.horizontal(|ui| {
-            ui.checkbox(
-                &mut self.solver_config.minimize_steps,
-                t!("label.min_steps"),
-            );
-            ui.add(HelpText::new(t!("info.min_steps")));
-        });
-        if self.solver_config.minimize_steps {
-            ui.label(
-                egui::RichText::new(Self::experimental_warning_text())
-                    .small()
-                    .color(ui.visuals().warn_fg_color),
-            );
-        }
     }
 
     fn draw_results_widget(&mut self, ui: &mut egui::Ui) {

@@ -97,6 +97,8 @@ impl<'a> Widget for PotionSelect<'a> {
                     .resolve(ui.style())
                     .size
                     .max(ui.spacing().interact_size.y);
+                let safe_width = ui.available_width();
+
                 let table = egui_extras::TableBuilder::new(ui)
                     .auto_shrink(false)
                     .striped(true)
@@ -104,7 +106,7 @@ impl<'a> Widget for PotionSelect<'a> {
                     .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                     .column(Column::auto())
                     .column(Column::exact(240.0))
-                    .column(Column::remainder())
+                    .column(Column::exact((safe_width - 298.0).max(20.0)))
                     .min_scrolled_height(0.0);
                 table.body(|body| {
                     body.rows(text_height, search_result.len(), |mut row| {

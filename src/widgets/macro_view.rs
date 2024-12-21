@@ -95,6 +95,7 @@ pub struct MacroView<'a> {
     actions: &'a mut Vec<Action>,
     config: &'a mut MacroViewConfig,
     locale: Locale,
+    is_vertical: bool,
 }
 
 impl<'a> MacroView<'a> {
@@ -102,19 +103,28 @@ impl<'a> MacroView<'a> {
         actions: &'a mut Vec<Action>,
         config: &'a mut MacroViewConfig,
         locale: Locale,
+        is_vertical: bool,
     ) -> Self {
         Self {
             actions,
             config,
             locale,
+            is_vertical,
         }
     }
 }
 
 impl<'a> Widget for MacroView<'a> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        ui.group(|ui| {
-            ui.vertical(|ui| {
+        // ui.group(|ui| {
+        ui.vertical(|ui| {
+            let id = ui.make_persistent_id("my_collapsing_header");
+            egui::collapsing_header::CollapsingState::load_with_default_open(
+                ui.ctx(),
+                id,
+                self.is_vertical, // TODO check panel location
+            )
+            .show_header(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new(t!("label.macro")).strong());
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -138,7 +148,9 @@ impl<'a> Widget for MacroView<'a> {
                             duration = duration
                         ));
                     });
-                });
+                }); // you can put checkboxes or whatever here
+            })
+            .body_unindented(|ui| {
                 ui.separator();
                 ui.horizontal(|ui| {
                     ui.checkbox(&mut self.config.include_delay, t!("label.include_delay"));
@@ -193,9 +205,10 @@ impl<'a> Widget for MacroView<'a> {
                         self.locale,
                     ));
                 }
-                // fill the remaining space
-                ui.with_layout(Layout::bottom_up(Align::LEFT), |_| {});
             });
+
+            // fill the remaining space
+            //ui.with_layout(Layout::bottom_up(Align::LEFT), |_| {});
         })
         .response
     }

@@ -146,7 +146,7 @@ impl<'a> Widget for Simulator<'a> {
                             egui::ProgressBar::new(cp as f32 / max_cp as f32)
                                 .text(format!("{: >3} / {}", cp, max_cp))
                                 .rounding(Rounding::ZERO)
-                                .desired_width(120.0),
+                                .desired_width(120.0f32.min(ui.available_width() - 25.0)),
                         );
 
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
