@@ -19,7 +19,7 @@ impl egui::Widget for ItemNameLabel {
         let id = egui::Id::new(ui.id().value() ^ u64::from(self.item_id));
 
         let response = if ui.ctx().animate_bool_with_time(id, false, 0.25) == 0.0 {
-            ui.add(egui::Label::new(egui::RichText::new(&self.text)).sense(egui::Sense::click()))
+            ui.add(egui::Label::new(egui::RichText::new(&self.text)).sense(egui::Sense::CLICK))
         } else {
             ui.add(
                 egui::Label::new(
