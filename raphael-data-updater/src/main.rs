@@ -29,26 +29,28 @@ async fn fetch_and_parse<T: SheetData>(lang: &str) -> Vec<T> {
 }
 
 fn export_rlvls(rlvls: &[RecipeLevel]) {
-    let path = std::path::absolute("./raphael-data/data/rlvls.rs").unwrap();
+    let path = std::path::absolute("./raphael-data/src/data/rlvls.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(&mut writer, "&[").unwrap();
-    writeln!(&mut writer, "{},", RecipeLevel::default()).unwrap(); // index 0
+    writeln!(&mut writer, "use crate::RecipeLevel;").unwrap();
+    writeln!(&mut writer, "").unwrap();
+    writeln!(&mut writer, "pub const RLVLS: &[RecipeLevel] = &[").unwrap();
+    writeln!(&mut writer, "    {},", RecipeLevel::default()).unwrap(); // index 0
     for rlvl in rlvls.iter() {
-        writeln!(&mut writer, "{rlvl},").unwrap();
+        writeln!(&mut writer, "    {rlvl},").unwrap();
     }
-    writeln!(&mut writer, "]").unwrap();
+    writeln!(&mut writer, "];").unwrap();
     log::info!("rlvls exported to \"{}\"", path.display());
 }
 
 fn export_level_adjust_table(level_adjust_table_entries: &[LevelAdjustTableEntry]) {
-    let path = std::path::absolute("./raphael-data/data/level_adjust_table.rs").unwrap();
+    let path = std::path::absolute("./raphael-data/src/data/level_adjust_table.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(&mut writer, "&[").unwrap();
-    writeln!(&mut writer, "{},", u16::default()).unwrap(); // index 0
+    writeln!(&mut writer, "pub const LEVEL_ADJUST_TABLE: &[u16] =  &[").unwrap();
+    writeln!(&mut writer, "    {},", u16::default()).unwrap(); // index 0
     for entry in level_adjust_table_entries.iter() {
-        writeln!(&mut writer, "{entry},").unwrap();
+        writeln!(&mut writer, "    {entry},").unwrap();
     }
-    writeln!(&mut writer, "]").unwrap();
+    writeln!(&mut writer, "];").unwrap();
     log::info!("Level adjust table exported to \"{}\"", path.display());
 }
 
@@ -57,9 +59,11 @@ fn export_recipes(recipes: &[Recipe]) {
     for recipe in recipes {
         phf_map.entry(recipe.id, &format!("{recipe}"));
     }
-    let path = std::path::absolute("./raphael-data/data/recipes.rs").unwrap();
+    let path = std::path::absolute("./raphael-data/src/data/recipes.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(&mut writer, "use crate::{{Recipe, Ingredient}};").unwrap();
+    writeln!(&mut writer, "").unwrap();
+    writeln!(writer, "pub static RECIPES: phf::OrderedMap<u32, Recipe> = {};", phf_map.build()).unwrap();
     log::info!("recipes exported to \"{}\"", path.display());
 }
 
@@ -68,31 +72,37 @@ fn export_items(items: &[Item]) {
     for item in items {
         phf_map.entry(item.id, &format!("{item}"));
     }
-    let path = std::path::absolute("./raphael-data/data/items.rs").unwrap();
+    let path = std::path::absolute("./raphael-data/src/data/items.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(&mut writer, "use crate::Item;").unwrap();
+    writeln!(&mut writer, "").unwrap();
+    writeln!(writer, "pub const ITEMS: phf::OrderedMap<u32, Item> = {};", phf_map.build()).unwrap();
     log::info!("items exported to \"{}\"", path.display());
 }
 
 fn export_meals(consumables: &[Consumable]) {
-    let path = std::path::absolute("./raphael-data/data/meals.rs").unwrap();
+    let path = std::path::absolute("./raphael-data/src/data/meals.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(&mut writer, "&[").unwrap();
+    writeln!(&mut writer, "use crate::Consumable;").unwrap();
+    writeln!(&mut writer, "").unwrap();
+    writeln!(&mut writer, "pub const MEALS: &[Consumable] = &[").unwrap();
     for consumable in consumables.iter() {
-        writeln!(&mut writer, "{consumable},").unwrap();
+        writeln!(&mut writer, "    {consumable},").unwrap();
     }
-    writeln!(&mut writer, "]").unwrap();
+    writeln!(&mut writer, "];").unwrap();
     log::info!("meals exported to \"{}\"", path.display());
 }
 
 fn export_potions(consumables: &[Consumable]) {
-    let path = std::path::absolute("./raphael-data/data/potions.rs").unwrap();
+    let path = std::path::absolute("./raphael-data/src/data/potions.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(&mut writer, "&[").unwrap();
+    writeln!(&mut writer, "use crate::Consumable;").unwrap();
+    writeln!(&mut writer, "").unwrap();
+    writeln!(&mut writer, "pub const POTIONS: &[Consumable] = &[").unwrap();
     for consumable in consumables.iter() {
-        writeln!(&mut writer, "{consumable},").unwrap();
+        writeln!(&mut writer, "    {consumable},").unwrap();
     }
-    writeln!(&mut writer, "]").unwrap();
+    writeln!(&mut writer, "];").unwrap();
     log::info!("potions exported to \"{}\"", path.display());
 }
 
@@ -101,9 +111,9 @@ fn export_item_names(item_names: &[ItemName], lang: &str) {
     for item_name in item_names {
         phf_map.entry(item_name.id, &format!("\"{}\"", item_name.name));
     }
-    let path = std::path::absolute(format!("./raphael-data/data/item_names_{lang}.rs")).unwrap();
+    let path = std::path::absolute(format!("./raphael-data/src/data/item_names_{lang}.rs")).unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(writer, "pub static ITEM_NAMES_{}: phf::Map<u32, &str> = {};", lang.to_uppercase(), phf_map.build()).unwrap();
     log::info!("item names exported to \"{}\"", path.display());
 }
 
