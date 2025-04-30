@@ -1,4 +1,6 @@
-use crate::ITEMS;
+use crate::{
+    ITEMS, ITEM_NAMES_EN, ITEM_NAMES_DE, ITEM_NAMES_FR, ITEM_NAMES_JP,
+};
 use raphael_sim::Action;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -33,11 +35,6 @@ pub fn get_job_name(job_id: u8, locale: Locale) -> &'static str {
         Locale::JP => JOB_NAMES_EN[job_id as usize], // JP job abbreviations are the same as EN
     }
 }
-
-pub static ITEM_NAMES_EN: phf::Map<u32, &str> = include!("../data/item_names_en.rs");
-pub static ITEM_NAMES_DE: phf::Map<u32, &str> = include!("../data/item_names_de.rs");
-pub static ITEM_NAMES_FR: phf::Map<u32, &str> = include!("../data/item_names_fr.rs");
-pub static ITEM_NAMES_JP: phf::Map<u32, &str> = include!("../data/item_names_jp.rs");
 
 pub fn get_item_name(item_id: u32, hq: bool, locale: Locale) -> Option<String> {
     let item_name = match locale {

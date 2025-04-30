@@ -10,6 +10,9 @@ pub use locales::*;
 mod search;
 pub use search::*;
 
+mod data;
+pub use data::*;
+
 use raphael_sim::{Action, ActionMask, Settings};
 
 pub const HQ_ICON_CHAR: char = '\u{e03c}';
@@ -67,11 +70,6 @@ pub struct Recipe {
     pub req_craftsmanship: u16,
     pub req_control: u16,
 }
-
-pub const RLVLS: &[RecipeLevel] = include!("../data/rlvls.rs");
-pub const LEVEL_ADJUST_TABLE: &[u16] = include!("../data/level_adjust_table.rs");
-pub static RECIPES: phf::OrderedMap<u32, Recipe> = include!("../data/recipes.rs");
-pub const ITEMS: phf::OrderedMap<u32, Item> = include!("../data/items.rs");
 
 pub fn get_game_settings(
     recipe: Recipe,

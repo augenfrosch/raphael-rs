@@ -1,8 +1,5 @@
 use std::fmt::Write;
 
-pub const MEALS: &[Consumable] = include!("../data/meals.rs");
-pub const POTIONS: &[Consumable] = include!("../data/potions.rs");
-
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Consumable {
@@ -85,7 +82,7 @@ pub fn cp_bonus(base: u16, consumables: &[Option<Consumable>]) -> u16 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Locale, get_item_name};
+    use crate::{Locale, MEALS, POTIONS, get_item_name};
 
     use super::*;
 
