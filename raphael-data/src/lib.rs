@@ -10,6 +10,7 @@ pub use locales::*;
 mod search;
 pub use search::*;
 
+#[rustfmt::skip]
 mod data;
 pub use data::*;
 
