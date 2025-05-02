@@ -12,7 +12,7 @@ use crate::config::{
     CrafterConfig, CustomRecipeOverridesConfiguration, QualitySource, RecipeConfiguration,
 };
 
-use super::{ItemNameLabel, util};
+use super::{RecipeLabel, util};
 
 #[derive(Default)]
 struct RecipeFinder {}
@@ -117,7 +117,11 @@ impl<'a> RecipeSelect<'a> {
                     ui.label(get_job_name(recipe.job_id, self.locale));
                 });
                 row.col(|ui| {
-                    ui.add(ItemNameLabel::new(recipe.item_id, false, self.locale));
+                    ui.add(RecipeLabel::new(
+                        &recipe,
+                        self.crafter_config.crafter_stats[recipe.job_id as usize].level,
+                        self.locale,
+                    ));
                 });
             });
         });
@@ -292,9 +296,11 @@ impl Widget for RecipeSelect<'_> {
                         &mut collapsed,
                     );
                     ui.label(egui::RichText::new("Recipe").strong());
-                    ui.add(ItemNameLabel::new(
-                        self.recipe_config.recipe.item_id,
-                        false,
+                    ui.add(RecipeLabel::new(
+                        &self.recipe_config.recipe,
+                        self.crafter_config.crafter_stats
+                            [self.recipe_config.recipe.job_id as usize]
+                            .level,
                         self.locale,
                     ));
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
