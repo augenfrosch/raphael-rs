@@ -67,7 +67,7 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
             );
 
             egui::RichText::new(format!(" {} ", raphael_data::LEVEL_SYNCED_ICON_CHAR))
-                .color(style.visuals.text_color())
+                .color(style.visuals.widgets.inactive.fg_stroke.color)
                 .append_to(
                     &mut layout_job,
                     &style,
@@ -76,7 +76,7 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                 );
 
             egui::RichText::new(format!("{: <5}", game_settings.max_progress))
-                .color(style.visuals.text_color())
+                .color(style.visuals.widgets.inactive.fg_stroke.color)
                 .size(7.0)
                 .append_to(
                     &mut layout_job,
@@ -85,7 +85,7 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                     egui::Align::TOP,
                 );
             egui::RichText::new(format!("{: <5}", game_settings.max_quality))
-                .color(style.visuals.text_color())
+                .color(style.visuals.widgets.inactive.fg_stroke.color)
                 .size(7.0)
                 .append_to(
                     &mut layout_job,
