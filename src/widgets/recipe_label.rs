@@ -6,7 +6,7 @@ use raphael_data::{CrafterStats, Locale, Recipe, get_game_settings, get_item_nam
 pub const EXPERT_RECIPE_ICON_CHAR: char = '\u{e100}';
 // The reason they use a texture is most likely since the icon typically appears on a baked in background
 // or with a reddish glow behind it. egui doesn't seem to have an easy way of replicating this procedurally  
-pub const EXPERT_RECIPE_ICON_COLOR: egui::Color32 = egui::Color32::from_rgb(224, 154, 122);
+pub const EXPERT_RECIPE_ICON_COLOR: egui::Color32 = egui::Color32::from_rgb(226, 122, 94);
 
 pub struct RecipeLabel<'a> {
     recipe: &'a Recipe,
