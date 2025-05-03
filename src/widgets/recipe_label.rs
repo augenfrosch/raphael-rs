@@ -102,17 +102,12 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
             if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
                 ui.close();
             }
-            let mut selection_made = false;
             if ui.button("Copy item name").clicked() {
                 let copy_item_name = item_name
                     .trim_end_matches([' ', raphael_data::HQ_ICON_CHAR, raphael_data::CL_ICON_CHAR])
                     .to_string();
                 ui.ctx().copy_text(copy_item_name);
                 ui.close();
-                selection_made = true;
-            }
-
-            if selection_made {
                 ui.ctx().animate_bool_with_time(id, true, 0.0);
             }
         });
