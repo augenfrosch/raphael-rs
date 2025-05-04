@@ -66,7 +66,7 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                 None,
             );
 
-            egui::RichText::new(format!(" {} ", raphael_data::LEVEL_SYNCED_ICON_CHAR))
+            egui::RichText::new(format!("\t{} ", raphael_data::LEVEL_SYNCED_ICON_CHAR))
                 .color(style.visuals.widgets.inactive.fg_stroke.color)
                 .append_to(
                     &mut layout_job,
@@ -75,7 +75,7 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                     egui::Align::Center,
                 );
 
-            egui::RichText::new(format!("{: <5}", game_settings.max_progress))
+            egui::RichText::new(format!("{: <6}", game_settings.max_progress))
                 .color(style.visuals.widgets.inactive.fg_stroke.color)
                 .size(7.0)
                 .append_to(
@@ -84,7 +84,7 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                     egui::FontSelection::Default,
                     egui::Align::TOP,
                 );
-            egui::RichText::new(format!("{: <5}", game_settings.max_quality))
+            egui::RichText::new(format!("{: <6}", game_settings.max_quality))
                 .color(style.visuals.widgets.inactive.fg_stroke.color)
                 .size(7.0)
                 .append_to(
@@ -93,7 +93,7 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                     egui::FontSelection::Default,
                     egui::Align::BOTTOM,
                 );
-            layout_job.sections.last_mut().unwrap().leading_space = -20.0;
+            layout_job.sections.last_mut().unwrap().leading_space = -24.0;
         }
 
         let response = ui.add(egui::Label::new(layout_job).sense(egui::Sense::CLICK));
