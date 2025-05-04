@@ -82,6 +82,7 @@ impl MacroSolverApp {
             style.url_in_tooltip = true;
             style.always_scroll_the_only_direction = false;
             style.spacing.item_spacing = egui::vec2(8.0, 8.0);
+            style.interaction.selectable_labels = false;
         });
 
         load_fonts(&cc.egui_ctx);
