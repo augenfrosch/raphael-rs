@@ -5,7 +5,7 @@ use raphael_data::{CrafterStats, Locale, Recipe, get_game_settings, get_item_nam
 // The game uses up to ~`\u{e0e0}`, egui's default fonts use space from `\u{e600}` upwards.
 pub const EXPERT_RECIPE_ICON_CHAR: char = '\u{e100}';
 // The reason they use a texture is most likely since the icon typically appears on a baked in background
-// or with a reddish glow behind it. egui doesn't seem to have an easy way of replicating this procedurally  
+// or with a reddish glow behind it. egui doesn't seem to have an easy way of replicating this procedurally
 pub const EXPERT_RECIPE_ICON_COLOR: egui::Color32 = egui::Color32::from_rgb(226, 122, 94);
 
 pub struct RecipeLabel<'a> {
@@ -75,7 +75,12 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                     egui::Align::Center,
                 );
 
-            egui::RichText::new(format!("{: <6}", game_settings.max_progress))
+            let max_progress_text_width = (game_settings
+                .max_progress
+                .checked_ilog10()
+                .unwrap_or_default() as usize)
+                .saturating_add(1);
+            egui::RichText::new(format!("{} ", game_settings.max_progress))
                 .color(style.visuals.widgets.inactive.fg_stroke.color)
                 .size(7.0)
                 .append_to(
@@ -84,7 +89,8 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                     egui::FontSelection::Default,
                     egui::Align::TOP,
                 );
-            egui::RichText::new(format!("{: <6}", game_settings.max_quality))
+            layout_job.sections.last_mut().unwrap().leading_space = -1.0;
+            egui::RichText::new(format!("{}", game_settings.max_quality))
                 .color(style.visuals.widgets.inactive.fg_stroke.color)
                 .size(7.0)
                 .append_to(
@@ -93,7 +99,8 @@ impl<'a> egui::Widget for RecipeLabel<'a> {
                     egui::FontSelection::Default,
                     egui::Align::BOTTOM,
                 );
-            layout_job.sections.last_mut().unwrap().leading_space = -24.0;
+            layout_job.sections.last_mut().unwrap().leading_space =
+                -2.0 - (4.0 * max_progress_text_width as f32);
         }
 
         let response = ui.add(egui::Label::new(layout_job).sense(egui::Sense::CLICK));
