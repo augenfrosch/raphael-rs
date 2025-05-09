@@ -8,9 +8,7 @@ pub struct LevelAdjustTableEntry {
 
 impl SheetData for LevelAdjustTableEntry {
     const SHEET: &'static str = "GathererCrafterLvAdjustTable";
-    const REQUIRED_FIELDS: &[&str] = &[
-        "Unknown0",
-    ];
+    const REQUIRED_FIELDS: &[&str] = &["Unknown0"];
 
     fn row_id(&self) -> u32 {
         self.level

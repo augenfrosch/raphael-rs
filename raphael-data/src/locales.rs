@@ -1,6 +1,4 @@
-use crate::{
-    ITEMS, ITEM_NAMES_EN, ITEM_NAMES_DE, ITEM_NAMES_FR, ITEM_NAMES_JP,
-};
+use crate::{ITEM_NAMES_DE, ITEM_NAMES_EN, ITEM_NAMES_FR, ITEM_NAMES_JP, ITEMS};
 use raphael_sim::Action;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

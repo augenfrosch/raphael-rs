@@ -63,7 +63,12 @@ fn export_recipes(recipes: &[Recipe]) {
     let mut writer = BufWriter::new(File::create(&path).unwrap());
     writeln!(&mut writer, "use crate::{{Recipe, Ingredient}};").unwrap();
     writeln!(&mut writer, "").unwrap();
-    writeln!(writer, "pub static RECIPES: phf::OrderedMap<u32, Recipe> = {};", phf_map.build()).unwrap();
+    writeln!(
+        writer,
+        "pub static RECIPES: phf::OrderedMap<u32, Recipe> = {};",
+        phf_map.build()
+    )
+    .unwrap();
     log::info!("recipes exported to \"{}\"", path.display());
 }
 
@@ -76,7 +81,12 @@ fn export_items(items: &[Item]) {
     let mut writer = BufWriter::new(File::create(&path).unwrap());
     writeln!(&mut writer, "use crate::Item;").unwrap();
     writeln!(&mut writer, "").unwrap();
-    writeln!(writer, "pub const ITEMS: phf::OrderedMap<u32, Item> = {};", phf_map.build()).unwrap();
+    writeln!(
+        writer,
+        "pub const ITEMS: phf::OrderedMap<u32, Item> = {};",
+        phf_map.build()
+    )
+    .unwrap();
     log::info!("items exported to \"{}\"", path.display());
 }
 
@@ -111,9 +121,16 @@ fn export_item_names(item_names: &[ItemName], lang: &str) {
     for item_name in item_names {
         phf_map.entry(item_name.id, &format!("\"{}\"", item_name.name));
     }
-    let path = std::path::absolute(format!("./raphael-data/src/data/item_names_{lang}.rs")).unwrap();
+    let path =
+        std::path::absolute(format!("./raphael-data/src/data/item_names_{lang}.rs")).unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "pub static ITEM_NAMES_{}: phf::Map<u32, &str> = {};", lang.to_uppercase(), phf_map.build()).unwrap();
+    writeln!(
+        writer,
+        "pub static ITEM_NAMES_{}: phf::Map<u32, &str> = {};",
+        lang.to_uppercase(),
+        phf_map.build()
+    )
+    .unwrap();
     log::info!("item names exported to \"{}\"", path.display());
 }
 
@@ -122,7 +139,8 @@ async fn main() {
     env_logger::builder().format_timestamp(None).init();
 
     let rlvls = tokio::spawn(async { fetch_and_parse::<RecipeLevel>("en").await });
-    let level_adjust_table_entries = tokio::spawn(async { fetch_and_parse::<LevelAdjustTableEntry>("en").await });
+    let level_adjust_table_entries =
+        tokio::spawn(async { fetch_and_parse::<LevelAdjustTableEntry>("en").await });
     let recipes = tokio::spawn(async { fetch_and_parse::<Recipe>("en").await });
     let items = tokio::spawn(async { fetch_and_parse::<Item>("en").await });
     let item_actions = tokio::spawn(async { fetch_and_parse::<ItemAction>("en").await });
