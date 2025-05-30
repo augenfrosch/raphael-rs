@@ -10,6 +10,10 @@ pub use locales::*;
 mod search;
 pub use search::*;
 
+#[rustfmt::skip]
+mod data;
+pub use data::*;
+
 use raphael_sim::{Action, ActionMask, Settings};
 
 pub const HQ_ICON_CHAR: char = '\u{e03c}';
@@ -70,8 +74,8 @@ pub struct Recipe {
 
 pub const RLVLS: &[RecipeLevel] = include!("../data/rlvls.rs");
 pub const LEVEL_ADJUST_TABLE: &[u16] = include!("../data/level_adjust_table.rs");
-pub static RECIPES: phf::OrderedMap<u32, Recipe> = include!("../data/recipes.rs");
-pub const ITEMS: phf::OrderedMap<u32, Item> = include!("../data/items.rs");
+//pub static RECIPES: phf::OrderedMap<u32, Recipe> = include!("../data/recipes.rs");
+//pub const ITEMS: phf::OrderedMap<u32, Item> = include!("../data/items.rs");
 
 pub fn get_game_settings(
     recipe: Recipe,
@@ -161,7 +165,9 @@ pub fn get_initial_quality(
     let ingredients: Vec<(Item, u32)> = recipe
         .ingredients
         .iter()
-        .filter_map(|ingredient| Some((*ITEMS.get(&ingredient.item_id)?, ingredient.amount)))
+        .filter_map(|ingredient| {
+            Some((*ITEMS.get(ingredient.item_id as usize)?, ingredient.amount))
+        })
         .collect();
 
     let mut max_ilvl = 0;

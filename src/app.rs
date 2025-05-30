@@ -690,7 +690,7 @@ impl MacroSolverApp {
         );
         let initial_quality = util::get_initial_quality(&self.recipe_config, &self.crafter_config);
         let item = raphael_data::ITEMS
-            .get(&self.recipe_config.recipe.item_id)
+            .get(self.recipe_config.recipe.item_id as usize)
             .copied()
             .unwrap_or_default();
         ui.add(Simulator::new(
@@ -860,7 +860,7 @@ impl MacroSolverApp {
             &mut self.recipe_config.quality_source
         {
             for (index, ingredient) in recipe_ingredients.into_iter().enumerate() {
-                if let Some(item) = raphael_data::ITEMS.get(&ingredient.item_id) {
+                if let Some(item) = raphael_data::ITEMS.get(ingredient.item_id as usize) {
                     if item.can_be_hq {
                         has_hq_ingredient = true;
                         ui.horizontal(|ui| {

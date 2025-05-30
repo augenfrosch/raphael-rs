@@ -30,7 +30,7 @@ pub fn find_recipes(search_string: &str, locale: Locale) -> Vec<u32> {
         .filter_map(|(recipe_id, recipe)| {
             let item_name = get_item_name(recipe.item_id, false, locale)?;
             match contains_noncontiguous(&item_name.to_lowercase(), &pattern) {
-                true => Some(*recipe_id),
+                true => Some(recipe_id as u32),
                 false => None,
             }
         })

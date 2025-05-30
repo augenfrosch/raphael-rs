@@ -8,7 +8,9 @@ workspace = true
 [dependencies]
 tokio = { version = "1.44.2", features = ["full"] }
 reqwest = "0.12.15"
-phf_codegen = "0.11.2"
+#phf_codegen = "0.11.2"
+non_contiguously_indexed_array = { path = "../../non_contiguously_indexed_array" }
+
 json = "0.12.4"
 log = { workspace = true }
 env_logger = "0.11.5"

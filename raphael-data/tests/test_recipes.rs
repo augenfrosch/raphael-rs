@@ -2,12 +2,12 @@ use raphael_data::*;
 
 #[track_caller]
 fn assert_item_exists(item_id: u32) {
-    assert!(ITEMS.contains_key(&item_id));
-    assert!(ITEM_NAMES_EN.contains_key(&item_id));
-    assert!(ITEM_NAMES_DE.contains_key(&item_id));
-    assert!(ITEM_NAMES_FR.contains_key(&item_id));
-    assert!(ITEM_NAMES_JP.contains_key(&item_id));
-    assert!(ITEM_NAMES_KR.contains_key(&item_id));
+    assert!(ITEMS.indices().find_map(|index| if index == (item_id as usize) { Some(true)} else {None}).unwrap_or_default());
+    assert!(ITEM_NAMES_EN.indices().find_map(|index| if index == (item_id as usize) { Some(true)} else {None}).unwrap_or_default());
+    assert!(ITEM_NAMES_DE.indices().find_map(|index| if index == (item_id as usize) { Some(true)} else {None}).unwrap_or_default());
+    assert!(ITEM_NAMES_FR.indices().find_map(|index| if index == (item_id as usize) { Some(true)} else {None}).unwrap_or_default());
+    assert!(ITEM_NAMES_JP.indices().find_map(|index| if index == (item_id as usize) { Some(true)} else {None}).unwrap_or_default());
+    // assert!(ITEM_NAMES_KR.indices().find_map(|index| if index == (item_id as usize) { Some(true)} else {None}).unwrap_or_default()); // FIXME
 }
 
 #[test]

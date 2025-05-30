@@ -53,24 +53,48 @@ fn export_level_adjust_table(level_adjust_table_entries: &[LevelAdjustTableEntry
 }
 
 fn export_recipes(recipes: &[Recipe]) {
-    let mut phf_map = phf_codegen::OrderedMap::new();
+    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayDataGenerator::new();
     for recipe in recipes {
-        phf_map.entry(recipe.id, &format!("{recipe}"));
+        nci_array_data_generator.entry(recipe.id as usize, recipe);
     }
     let path = std::path::absolute("./raphael-data/data/recipes.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
+    writeln!(writer, "use crate::{{Recipe, Ingredient}};").unwrap();
+    writeln!(writer, "").unwrap();
+    writeln!(
+        writer,
+        "{}",
+        nci_array_data_generator.build(
+            "pub const RECIPE_DATA: NciArrayData<Recipe, {R}, {N}> = NciArrayData",
+            ";",
+            false
+        )
+    )
+    .unwrap();
     log::info!("recipes exported to \"{}\"", path.display());
 }
 
 fn export_items(items: &[Item]) {
-    let mut phf_map = phf_codegen::OrderedMap::new();
+    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayDataGenerator::new();
     for item in items {
-        phf_map.entry(item.id, &format!("{item}"));
+        nci_array_data_generator.entry(item.id as usize, item);
     }
     let path = std::path::absolute("./raphael-data/data/items.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
+    writeln!(writer, "use crate::Item;").unwrap();
+    writeln!(writer, "").unwrap();
+    writeln!(
+        writer,
+        "{}",
+        nci_array_data_generator.build(
+            "pub const ITEM_DATA: NciArrayData<Item, {R}, {N}> = NciArrayData",
+            ";",
+            false
+        )
+    )
+    .unwrap();
     log::info!("items exported to \"{}\"", path.display());
 }
 
@@ -97,13 +121,15 @@ fn export_potions(consumables: &[Consumable]) {
 }
 
 fn export_item_names(item_names: &[ItemName], lang: &str) {
-    let mut phf_map = phf_codegen::Map::new();
+    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayDataGenerator::new();
     for item_name in item_names {
-        phf_map.entry(item_name.id, &format!("\"{}\"", item_name.name));
+        nci_array_data_generator.entry(item_name.id as usize, item_name.name.clone());
     }
     let path = std::path::absolute(format!("./raphael-data/data/item_names_{lang}.rs")).unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
+    writeln!(writer, "").unwrap();
+    writeln!(writer, "{}", nci_array_data_generator.build("pub const ITEM_NAME_DATA: non_contiguously_indexed_array::NciArrayData<&str, {R}, {N}> = NciArrayData", ";", true)).unwrap();
     log::info!("item names exported to \"{}\"", path.display());
 }
 

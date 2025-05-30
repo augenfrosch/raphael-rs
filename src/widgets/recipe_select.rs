@@ -103,7 +103,7 @@ impl<'a> RecipeSelect<'a> {
         table.body(|body| {
             body.rows(line_height, search_result.len(), |mut row| {
                 let recipe_id = search_result[row.index()];
-                let recipe = raphael_data::RECIPES[&recipe_id];
+                let recipe = raphael_data::RECIPES[recipe_id as usize];
                 row.col(|ui| {
                     if ui.button("Select").clicked() {
                         self.crafter_config.selected_job = recipe.job_id;

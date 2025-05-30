@@ -1,4 +1,4 @@
-use crate::ITEMS;
+use crate::{ITEM_NAMES_DE, ITEM_NAMES_EN, ITEM_NAMES_FR, ITEM_NAMES_JP, ITEMS};
 use raphael_sim::Action;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -26,7 +26,9 @@ impl std::fmt::Display for Locale {
 const JOB_NAMES_EN: [&str; 8] = ["CRP", "BSM", "ARM", "GSM", "LTW", "WVR", "ALC", "CUL"];
 const JOB_NAMES_DE: [&str; 8] = ["ZMR", "GRS", "PLA", "GLD", "GER", "WEB", "ALC", "GRM"];
 const JOB_NAMES_FR: [&str; 8] = ["MEN", "FRG", "ARM", "ORF", "TAN", "COU", "ALC", "CUI"];
-const JOB_NAMES_KR: [&str; 8] = ["목수", "대장", "갑주", "보석", "가죽", "재봉", "연금", "요리"];
+const JOB_NAMES_KR: [&str; 8] = [
+    "목수", "대장", "갑주", "보석", "가죽", "재봉", "연금", "요리",
+];
 
 pub fn get_job_name(job_id: u8, locale: Locale) -> &'static str {
     match locale {
@@ -38,21 +40,15 @@ pub fn get_job_name(job_id: u8, locale: Locale) -> &'static str {
     }
 }
 
-pub static ITEM_NAMES_EN: phf::Map<u32, &str> = include!("../data/item_names_en.rs");
-pub static ITEM_NAMES_DE: phf::Map<u32, &str> = include!("../data/item_names_de.rs");
-pub static ITEM_NAMES_FR: phf::Map<u32, &str> = include!("../data/item_names_fr.rs");
-pub static ITEM_NAMES_JP: phf::Map<u32, &str> = include!("../data/item_names_jp.rs");
-pub static ITEM_NAMES_KR: phf::Map<u32, &str> = include!("../data/item_names_kr.rs");
-
 pub fn get_item_name(item_id: u32, hq: bool, locale: Locale) -> Option<String> {
     let item_name = match locale {
-        Locale::EN => ITEM_NAMES_EN.get(&item_id)?.to_owned(),
-        Locale::DE => ITEM_NAMES_DE.get(&item_id)?.to_owned(),
-        Locale::FR => ITEM_NAMES_FR.get(&item_id)?.to_owned(),
-        Locale::JP => ITEM_NAMES_JP.get(&item_id)?.to_owned(),
-        Locale::KR => ITEM_NAMES_KR.get(&item_id)?.to_owned(),
+        Locale::EN => ITEM_NAMES_EN.get(item_id as usize)?.to_owned(),
+        Locale::DE => ITEM_NAMES_DE.get(item_id as usize)?.to_owned(),
+        Locale::FR => ITEM_NAMES_FR.get(item_id as usize)?.to_owned(),
+        Locale::JP => ITEM_NAMES_JP.get(item_id as usize)?.to_owned(),
+        Locale::KR => ITEM_NAMES_EN.get(item_id as usize)?.to_owned(), // TODO Fix korean locale
     };
-    let item_entry = ITEMS.get(&item_id);
+    let item_entry = ITEMS.get(item_id as usize);
     let always_collectable = item_entry.is_some_and(|item| item.always_collectable);
     if !always_collectable {
         match hq {

@@ -10,8 +10,10 @@ crate-type = ["rlib"]
 
 [dependencies]
 raphael-sim = { workspace = true }
-phf = "0.11.2"
+#phf = "0.11.2"
+non_contiguously_indexed_array = { path = "../../non_contiguously_indexed_array" }
+
 serde = { version = "1.0.215", features = ["derive"], optional = true }
 
 [features]
-serde = ["dep:serde", "raphael-sim/serde"]
+serde = ["dep:serde", "raphael-sim/serde", "non_contiguously_indexed_array/serde"]

@@ -45,6 +45,8 @@ raphael-sim = { workspace = true, features = ["serde"] }
 raphael-solver = { workspace = true, features = ["serde"] }
 raphael-data = { workspace = true, features = ["serde"] }
 
+non_contiguously_indexed_array = { path = "../non_contiguously_indexed_array", features = ["serde"] }
+
 # This revision includes the fix for tab-navigating over disabled widgets.
 # Switch back to version number once new egui version is released. Same for `eframe` further down
 egui = { git = "https://github.com/emilk/egui.git", rev = "6a8ee29" }
