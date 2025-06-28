@@ -1,4 +1,4 @@
-use crate::{ITEM_NAMES_DE, ITEM_NAMES_EN, ITEM_NAMES_FR, ITEM_NAMES_JP, ITEMS};
+use crate::{ITEM_NAMES_DE, ITEM_NAMES_EN, ITEM_NAMES_FR, ITEM_NAMES_JP, ITEM_NAMES_KR, ITEMS};
 use raphael_sim::Action;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -46,7 +46,7 @@ pub fn get_item_name(item_id: u32, hq: bool, locale: Locale) -> Option<String> {
         Locale::DE => ITEM_NAMES_DE.get(item_id as usize)?.to_owned(),
         Locale::FR => ITEM_NAMES_FR.get(item_id as usize)?.to_owned(),
         Locale::JP => ITEM_NAMES_JP.get(item_id as usize)?.to_owned(),
-        Locale::KR => ITEM_NAMES_EN.get(item_id as usize)?.to_owned(), // TODO Fix korean locale
+        Locale::KR => ITEM_NAMES_KR.get(item_id as usize)?.to_owned(),
     };
     let item_entry = ITEMS.get(item_id as usize);
     let always_collectable = item_entry.is_some_and(|item| item.always_collectable);

@@ -21,3 +21,6 @@ pub const ITEM_NAMES_FR: NciArray<&str> = NciArray::new(&item_names_fr::ITEM_NAM
 
 mod item_names_jp;
 pub const ITEM_NAMES_JP: NciArray<&str> = NciArray::new(&item_names_jp::ITEM_NAME_DATA.index_range_starting_indices, &item_names_jp::ITEM_NAME_DATA.index_range_skip_amounts, &item_names_jp::ITEM_NAME_DATA.values);
+
+mod item_names_kr;
+pub const ITEM_NAMES_KR: NciArray<&str> = NciArray::new(&item_names_kr::ITEM_NAME_DATA.index_range_starting_indices, &item_names_kr::ITEM_NAME_DATA.index_range_skip_amounts, &item_names_kr::ITEM_NAME_DATA.values);
