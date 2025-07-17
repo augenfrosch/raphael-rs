@@ -4,6 +4,13 @@ use std::{fs::File, io::BufWriter};
 
 use raphael_data_updater::*;
 
+const NCI_ARRAY_DARA_GENERATOR_RUST_CODEGEN_DEFAULT_CONFIG:
+    non_contiguously_indexed_array::BuildConfiguration =
+    non_contiguously_indexed_array::BuildConfiguration {
+        output_format: non_contiguously_indexed_array::OutputFormat::RustCodegen,
+        value_formatting: non_contiguously_indexed_array::ValueFormatting::Display,
+    };
+
 async fn fetch_and_parse<T: SheetData>(lang: &str) -> Vec<T> {
     const XIV_API: &str = "https://v2.xivapi.com/api";
     const BOILMASTER_KO: &str = "https://boilmaster_ko.augenfrosch.dev/api";
@@ -69,12 +76,15 @@ fn export_recipes(recipes: &[Recipe]) {
     writeln!(writer, "").unwrap();
     writeln!(
         writer,
-        "{}",
-        nci_array_data_generator.build(
-            "pub const RECIPE_DATA: NciArrayData<Recipe, {R}, {N}> = NciArrayData",
-            ";",
-            false
-        )
+        "type RecipeData = {};",
+        nci_array_data_generator.build_type("Recipe")
+    )
+    .unwrap();
+    writeln!(writer, "").unwrap();
+    writeln!(
+        writer,
+        "pub const RECIPE_DATA: RecipeData = NciArrayData {};",
+        nci_array_data_generator.build(NCI_ARRAY_DARA_GENERATOR_RUST_CODEGEN_DEFAULT_CONFIG)
     )
     .unwrap();
     log::info!("recipes exported to \"{}\"", path.display());
@@ -92,12 +102,15 @@ fn export_items(items: &[Item]) {
     writeln!(writer, "").unwrap();
     writeln!(
         writer,
-        "{}",
-        nci_array_data_generator.build(
-            "pub const ITEM_DATA: NciArrayData<Item, {R}, {N}> = NciArrayData",
-            ";",
-            false
-        )
+        "type ItemData = {};",
+        nci_array_data_generator.build_type("Item")
+    )
+    .unwrap();
+    writeln!(writer, "").unwrap();
+    writeln!(
+        writer,
+        "pub const ITEM_DATA: ItemData = NciArrayData {};",
+        nci_array_data_generator.build(NCI_ARRAY_DARA_GENERATOR_RUST_CODEGEN_DEFAULT_CONFIG)
     )
     .unwrap();
     log::info!("items exported to \"{}\"", path.display());
@@ -134,7 +147,22 @@ fn export_item_names(item_names: &[ItemName], lang: &str) {
     let mut writer = BufWriter::new(File::create(&path).unwrap());
     writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
     writeln!(writer, "").unwrap();
-    writeln!(writer, "{}", nci_array_data_generator.build("pub const ITEM_NAME_DATA: non_contiguously_indexed_array::NciArrayData<&str, {R}, {N}> = NciArrayData", ";", true)).unwrap();
+    writeln!(
+        writer,
+        "type ItemNameData = {};",
+        nci_array_data_generator.build_type("&str")
+    )
+    .unwrap();
+    writeln!(writer, "").unwrap();
+    writeln!(
+        writer,
+        "pub const ITEM_NAME_DATA: ItemNameData = NciArrayData {};",
+        nci_array_data_generator.build(non_contiguously_indexed_array::BuildConfiguration {
+            output_format: non_contiguously_indexed_array::OutputFormat::RustCodegen,
+            value_formatting: non_contiguously_indexed_array::ValueFormatting::Debug
+        })
+    )
+    .unwrap();
     log::info!("item names exported to \"{}\"", path.display());
 }
 
