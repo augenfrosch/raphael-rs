@@ -69,7 +69,7 @@ fn export_recipes(recipes: &[Recipe]) {
     for recipe in recipes {
         nci_array_data_generator.entry(recipe.id as usize, recipe);
     }
-    let path = std::path::absolute("./raphael-data/data/recipes.rs").unwrap();
+    let path = std::path::absolute("./raphael-data/src/data/recipes.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
     writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
     writeln!(writer, "use crate::{{Recipe, Ingredient}};").unwrap();
@@ -95,7 +95,7 @@ fn export_items(items: &[Item]) {
     for item in items {
         nci_array_data_generator.entry(item.id as usize, item);
     }
-    let path = std::path::absolute("./raphael-data/data/items.rs").unwrap();
+    let path = std::path::absolute("./raphael-data/src/data/items.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
     writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
     writeln!(writer, "use crate::Item;").unwrap();
@@ -143,7 +143,8 @@ fn export_item_names(item_names: &[ItemName], lang: &str) {
     for item_name in item_names {
         nci_array_data_generator.entry(item_name.id as usize, item_name.name.clone());
     }
-    let path = std::path::absolute(format!("./raphael-data/data/item_names_{lang}.rs")).unwrap();
+    let path =
+        std::path::absolute(format!("./raphael-data/src/data/item_names_{lang}.rs")).unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
     writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
     writeln!(writer, "").unwrap();
