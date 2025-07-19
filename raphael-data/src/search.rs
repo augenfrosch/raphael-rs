@@ -1,5 +1,5 @@
 use crate::{
-    CL_ICON_CHAR, Consumable, HQ_ICON_CHAR, Locale, MEALS, POTIONS, RECIPES, get_item_name,
+    get_base_item_name, Consumable, GameData, Locale, CL_ICON_CHAR, HQ_ICON_CHAR, MEALS, POTIONS
 };
 
 fn contains_noncontiguous(string: &str, pattern: &str) -> bool {
@@ -23,12 +23,12 @@ fn preprocess_pattern(pattern: &str) -> String {
         .replace([HQ_ICON_CHAR, CL_ICON_CHAR], "")
 }
 
-pub fn find_recipes(search_string: &str, locale: Locale) -> Vec<u32> {
+pub fn find_recipes(game_data: &GameData, search_string: &str, locale: Locale) -> Vec<u32> {
     let pattern = preprocess_pattern(search_string);
-    RECIPES
+    game_data.recipes
         .entries()
         .filter_map(|(recipe_id, recipe)| {
-            let item_name = get_item_name(recipe.item_id, false, locale)?;
+            let item_name = get_base_item_name(game_data, recipe.item_id, locale)?;
             match contains_noncontiguous(&item_name.to_lowercase(), &pattern) {
                 true => Some(recipe_id as u32),
                 false => None,
@@ -37,13 +37,13 @@ pub fn find_recipes(search_string: &str, locale: Locale) -> Vec<u32> {
         .collect()
 }
 
-fn find_consumables(search_string: &str, locale: Locale, consumables: &[Consumable]) -> Vec<usize> {
+fn find_consumables(game_data: &GameData, search_string: &str, locale: Locale, consumables: &[Consumable]) -> Vec<usize> {
     let pattern = preprocess_pattern(search_string);
     consumables
         .iter()
         .enumerate()
         .filter_map(|(index, consumable)| {
-            let item_name = get_item_name(consumable.item_id, false, locale)?;
+            let item_name = get_base_item_name(game_data, consumable.item_id, locale)?;
             match contains_noncontiguous(&item_name.to_lowercase(), &pattern) {
                 true => Some(index),
                 false => None,
@@ -52,10 +52,10 @@ fn find_consumables(search_string: &str, locale: Locale, consumables: &[Consumab
         .collect()
 }
 
-pub fn find_meals(search_string: &str, locale: Locale) -> Vec<usize> {
-    find_consumables(search_string, locale, MEALS)
+pub fn find_meals(game_data: &GameData, search_string: &str, locale: Locale) -> Vec<usize> {
+    find_consumables(game_data, search_string, locale, MEALS)
 }
 
-pub fn find_potions(search_string: &str, locale: Locale) -> Vec<usize> {
-    find_consumables(search_string, locale, POTIONS)
+pub fn find_potions(game_data: &GameData, search_string: &str, locale: Locale) -> Vec<usize> {
+    find_consumables(game_data, search_string, locale, POTIONS)
 }

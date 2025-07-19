@@ -1,6 +1,6 @@
 use std::num::NonZeroUsize;
 
-use raphael_data::{CrafterStats, CustomRecipeOverrides, Recipe};
+use raphael_data::{CrafterStats, CustomRecipeOverrides, Ingredient, Recipe};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -40,7 +40,8 @@ pub struct RecipeConfiguration {
 impl Default for RecipeConfiguration {
     fn default() -> Self {
         Self {
-            recipe: *raphael_data::RECIPES.values().next().unwrap(),
+            // First recipe from `recipes.rs`; TODO change this to not be copy-pasted
+            recipe: Recipe { job_id: 1, item_id: 5056, max_level_scaling: 0, recipe_level: 1, progress_factor: 50, quality_factor: 80, durability_factor: 67, material_factor: 0, ingredients: [Ingredient { item_id: 0, amount: 0 }, Ingredient { item_id: 0, amount: 0 }, Ingredient { item_id: 0, amount: 0 }, Ingredient { item_id: 0, amount: 0 }, Ingredient { item_id: 0, amount: 0 }, Ingredient { item_id: 0, amount: 0 }, ], is_expert: false, req_craftsmanship: 0, req_control: 0, },
             quality_source: QualitySource::HqMaterialList([0; 6]),
         }
     }

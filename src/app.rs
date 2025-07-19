@@ -44,7 +44,7 @@ struct DevPanelState {
     render_info_state: RenderInfoState,
 }
 
-pub struct MacroSolverApp {
+pub struct MacroSolverApp<'a> {
     locale: Locale,
     app_config: AppConfig,
     recipe_config: RecipeConfiguration,
@@ -59,6 +59,8 @@ pub struct MacroSolverApp {
 
     #[cfg(any(debug_assertions, feature = "dev-panel"))]
     dev_panel_state: DevPanelState,
+
+    game_data: raphael_data::GameData<'a>,
 
     latest_version: Arc<Mutex<semver::Version>>,
     current_version: semver::Version,
@@ -78,7 +80,7 @@ pub struct MacroSolverApp {
     solver_interrupt: raphael_solver::AtomicFlag,
 }
 
-impl MacroSolverApp {
+impl MacroSolverApp<'_> {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let app_config = load(cc, "APP_CONFIG", AppConfig::default());
@@ -122,6 +124,8 @@ impl MacroSolverApp {
             #[cfg(any(debug_assertions, feature = "dev-panel"))]
             dev_panel_state: DevPanelState::default(),
 
+            game_data: raphael_data::GameData::default(),
+
             latest_version: latest_version.clone(),
             current_version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
 
@@ -142,7 +146,7 @@ impl MacroSolverApp {
     }
 }
 
-impl eframe::App for MacroSolverApp {
+impl eframe::App for MacroSolverApp<'_> {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         #[cfg(target_arch = "wasm32")]
@@ -484,6 +488,7 @@ impl eframe::App for MacroSolverApp {
         .show(ctx, |ui| {
             ui.style_mut().spacing.item_spacing = egui::vec2(8.0, 3.0);
             ui.add(SavedRotationsWidget::new(
+                &self.game_data,
                 self.locale,
                 &mut self.saved_rotations_config,
                 &mut self.saved_rotations_data,
@@ -524,7 +529,7 @@ impl eframe::App for MacroSolverApp {
     }
 }
 
-impl MacroSolverApp {
+impl MacroSolverApp<'_> {
     fn process_solver_events(&mut self) {
         let mut solver_events = self.solver_events.lock().unwrap();
         while let Some(event) = solver_events.pop_front() {
@@ -553,7 +558,9 @@ impl MacroSolverApp {
                         game_settings.adversarial = self.solver_config.adversarial;
                         game_settings.backload_progress = self.solver_config.backload_progress;
                         let new_rotation = Rotation::new(
+                            &self.game_data,
                             raphael_data::get_item_name(
+                                &self.game_data,
                                 self.recipe_config.recipe.item_id,
                                 false,
                                 self.locale,
@@ -688,8 +695,8 @@ impl MacroSolverApp {
             self.selected_food,
             self.selected_potion,
         );
-        let initial_quality = util::get_initial_quality(&self.recipe_config, &self.crafter_config);
-        let item = raphael_data::ITEMS
+        let initial_quality = util::get_initial_quality(&self.game_data, &self.recipe_config, &self.crafter_config);
+        let item = self.game_data.items
             .get(self.recipe_config.recipe.item_id as usize)
             .copied()
             .unwrap_or_default();
@@ -707,6 +714,7 @@ impl MacroSolverApp {
     fn draw_list_select_widgets(&mut self, ui: &mut egui::Ui) {
         ui.vertical(|ui| {
             ui.add(RecipeSelect::new(
+                &self.game_data,
                 &mut self.crafter_config,
                 &mut self.recipe_config,
                 &mut self.custom_recipe_overrides_config,
@@ -715,11 +723,13 @@ impl MacroSolverApp {
                 self.locale,
             ));
             ui.add(FoodSelect::new(
+                &self.game_data,
                 self.crafter_config.crafter_stats[self.crafter_config.selected_job as usize],
                 &mut self.selected_food,
                 self.locale,
             ));
             ui.add(PotionSelect::new(
+                &self.game_data,
                 self.crafter_config.crafter_stats[self.crafter_config.selected_job as usize],
                 &mut self.selected_potion,
                 self.locale,
@@ -860,11 +870,11 @@ impl MacroSolverApp {
             &mut self.recipe_config.quality_source
         {
             for (index, ingredient) in recipe_ingredients.into_iter().enumerate() {
-                if let Some(item) = raphael_data::ITEMS.get(ingredient.item_id as usize) {
+                if let Some(item) = self.game_data.items.get(ingredient.item_id as usize) {
                     if item.can_be_hq {
                         has_hq_ingredient = true;
                         ui.horizontal(|ui| {
-                            ui.add(ItemNameLabel::new(ingredient.item_id, false, self.locale));
+                            ui.add(ItemNameLabel::new(&self.game_data, ingredient.item_id, false, self.locale));
                             ui.with_layout(
                                 Layout::right_to_left(Align::Center),
                                 |ui: &mut egui::Ui| {
@@ -1094,7 +1104,7 @@ impl MacroSolverApp {
             self.selected_food,
             self.selected_potion,
         );
-        let initial_quality = util::get_initial_quality(&self.recipe_config, &self.crafter_config);
+        let initial_quality = util::get_initial_quality(&self.game_data, &self.recipe_config, &self.crafter_config);
         ctx.data_mut(|data| {
             data.insert_temp(
                 Id::new("LAST_SOLVE_PARAMS"),

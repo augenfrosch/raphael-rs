@@ -1,4 +1,31 @@
+use raphael_data::{GameData, Locale};
 use raphael_sim::*;
+
+pub struct SearchGameData<'a> {
+    pub data_loaded: &'a dyn Fn(&GameData, Locale) -> bool,
+    pub data: &'a GameData<'a>,
+    pub locale: Locale,
+}
+
+impl std::hash::Hash for SearchGameData<'_> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        (self.data_loaded)(&self.data, self.locale).hash(state);
+    }
+}
+
+pub fn item_name_data_loaded(game_data: &GameData, locale: Locale) -> bool {
+    match locale {
+        Locale::EN => game_data.item_name_data_en.is_some(),
+        Locale::DE => game_data.item_name_data_de.is_some(),
+        Locale::FR => game_data.item_name_data_fr.is_some(),
+        Locale::JP => game_data.item_name_data_jp.is_some(),
+        Locale::KR => game_data.item_name_data_kr.is_some(),
+    }
+}
+
+pub fn recipe_data_loaded(game_data: &GameData, _locale: Locale) -> bool {
+    game_data.recipe_data.is_some()
+}
 
 pub fn collapse_persisted(ui: &mut egui::Ui, id: egui::Id, collapsed: &mut bool) {
     *collapsed = ui.data_mut(|data| *data.get_persisted_mut_or(id, *collapsed));

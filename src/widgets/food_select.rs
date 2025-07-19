@@ -3,22 +3,25 @@ use egui::{
     util::cache::{ComputerMut, FrameCache},
 };
 use egui_extras::Column;
-use raphael_data::{Consumable, CrafterStats, Locale, find_meals};
+use raphael_data::{find_meals, Consumable, CrafterStats, GameData, Locale};
+
+use crate::widgets::util::{item_name_data_loaded, SearchGameData};
 
 use super::{ItemNameLabel, util};
 
 #[derive(Default)]
 struct FoodFinder {}
 
-impl ComputerMut<(&str, Locale), Vec<usize>> for FoodFinder {
-    fn compute(&mut self, (text, locale): (&str, Locale)) -> Vec<usize> {
-        find_meals(text, locale)
+impl ComputerMut<(&SearchGameData<'_>, &str, Locale), Vec<usize>> for FoodFinder {
+    fn compute(&mut self, (search_game_data, text, locale): (&SearchGameData, &str, Locale)) -> Vec<usize> {
+        find_meals(search_game_data.data, text, locale)
     }
 }
 
 type FoodSearchCache<'a> = FrameCache<Vec<usize>, FoodFinder>;
 
 pub struct FoodSelect<'a> {
+    game_data: &'a GameData<'a>,
     crafter_stats: CrafterStats,
     selected_consumable: &'a mut Option<Consumable>,
     locale: Locale,
@@ -26,11 +29,13 @@ pub struct FoodSelect<'a> {
 
 impl<'a> FoodSelect<'a> {
     pub fn new(
+        game_data: &'a GameData,
         crafter_stats: CrafterStats,
         selected_consumable: &'a mut Option<Consumable>,
         locale: Locale,
     ) -> Self {
         Self {
+            game_data,
             crafter_stats,
             selected_consumable,
             locale,
@@ -51,7 +56,7 @@ impl Widget for FoodSelect<'_> {
                     match self.selected_consumable {
                         None => ui.label("None"),
                         Some(item) => {
-                            ui.add(ItemNameLabel::new(item.item_id, item.hq, self.locale))
+                            ui.add(ItemNameLabel::new(self.game_data, item.item_id, item.hq, self.locale))
                         }
                     };
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -93,9 +98,14 @@ impl Widget for FoodSelect<'_> {
                 ui.separator();
 
                 let mut search_result = Vec::new();
+                let search_game_data = SearchGameData {
+                    data_loaded: &item_name_data_loaded,
+                    data: self.game_data,
+                    locale: self.locale,
+                };
                 ui.ctx().memory_mut(|mem| {
                     let search_cache = mem.caches.cache::<FoodSearchCache<'_>>();
-                    search_result = search_cache.get((&search_text, self.locale));
+                    search_result = search_cache.get((&search_game_data, &search_text, self.locale));
                 });
 
                 ui.ctx().data_mut(|data| {
@@ -129,7 +139,7 @@ impl Widget for FoodSelect<'_> {
                             }
                         });
                         row.col(|ui| {
-                            ui.add(ItemNameLabel::new(item.item_id, item.hq, self.locale));
+                            ui.add(ItemNameLabel::new(self.game_data, item.item_id, item.hq, self.locale));
                         });
                         row.col(|ui| {
                             ui.label(item.effect_string(

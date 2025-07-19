@@ -1,4 +1,4 @@
-use raphael_data::Consumable;
+use raphael_data::{Consumable, GameData};
 
 use crate::{
     app::SolverConfig,
@@ -8,11 +8,13 @@ use crate::{
 };
 
 pub fn get_initial_quality(
+    game_data: &GameData,
     recipe_config: &RecipeConfiguration,
     crafter_config: &CrafterConfig,
 ) -> u16 {
     match recipe_config.quality_source {
         QualitySource::HqMaterialList(hq_materials) => raphael_data::get_initial_quality(
+            game_data,
             *crafter_config.active_stats(),
             recipe_config.recipe,
             hq_materials,

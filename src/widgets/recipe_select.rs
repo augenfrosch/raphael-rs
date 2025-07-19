@@ -4,28 +4,28 @@ use egui::{
 };
 use egui_extras::Column;
 use raphael_data::{
-    Consumable, CustomRecipeOverrides, Ingredient, Locale, RLVLS, find_recipes, get_game_settings,
-    get_job_name,
+    find_recipes, get_game_settings, get_job_name, Consumable, CustomRecipeOverrides, GameData, Ingredient, Locale, RLVLS
 };
 
-use crate::config::{
+use crate::{config::{
     CrafterConfig, CustomRecipeOverridesConfiguration, QualitySource, RecipeConfiguration,
-};
+}, widgets::util::{recipe_data_loaded, SearchGameData}};
 
 use super::{ItemNameLabel, util};
 
 #[derive(Default)]
 struct RecipeFinder {}
 
-impl ComputerMut<(&str, Locale), Vec<u32>> for RecipeFinder {
-    fn compute(&mut self, (text, locale): (&str, Locale)) -> Vec<u32> {
-        find_recipes(text, locale)
+impl ComputerMut<(&SearchGameData<'_>, &str, Locale), Vec<u32>> for RecipeFinder {
+    fn compute(&mut self, (search_game_data, text, locale): (&SearchGameData, &str, Locale)) -> Vec<u32> {
+        find_recipes(search_game_data.data, text, locale)
     }
 }
 
 type SearchCache<'a> = FrameCache<Vec<u32>, RecipeFinder>;
 
 pub struct RecipeSelect<'a> {
+    game_data: &'a GameData<'a>,
     crafter_config: &'a mut CrafterConfig,
     recipe_config: &'a mut RecipeConfiguration,
     custom_recipe_overrides_config: &'a mut CustomRecipeOverridesConfiguration,
@@ -36,6 +36,7 @@ pub struct RecipeSelect<'a> {
 
 impl<'a> RecipeSelect<'a> {
     pub fn new(
+        game_data: &'a GameData<'a>,
         crafter_config: &'a mut CrafterConfig,
         recipe_config: &'a mut RecipeConfiguration,
         custom_recipe_overrides_config: &'a mut CustomRecipeOverridesConfiguration,
@@ -44,6 +45,7 @@ impl<'a> RecipeSelect<'a> {
         locale: Locale,
     ) -> Self {
         Self {
+            game_data,
             crafter_config,
             recipe_config,
             custom_recipe_overrides_config,
@@ -72,9 +74,14 @@ impl<'a> RecipeSelect<'a> {
         ui.separator();
 
         let mut search_result = Vec::new();
+        let search_game_data = SearchGameData {
+                    data_loaded: &recipe_data_loaded,
+                    data: self.game_data,
+                    locale: self.locale,
+                };
         ui.ctx().memory_mut(|mem| {
             let search_cache = mem.caches.cache::<SearchCache<'_>>();
-            search_result = search_cache.get((&search_text, self.locale));
+            search_result = search_cache.get((&search_game_data, &search_text, self.locale));
         });
 
         ui.ctx().data_mut(|data| {
@@ -103,7 +110,7 @@ impl<'a> RecipeSelect<'a> {
         table.body(|body| {
             body.rows(line_height, search_result.len(), |mut row| {
                 let recipe_id = search_result[row.index()];
-                let recipe = raphael_data::RECIPES[recipe_id as usize];
+                let recipe = self.game_data.recipes[recipe_id as usize];
                 row.col(|ui| {
                     if ui.button("Select").clicked() {
                         self.crafter_config.selected_job = recipe.job_id;
@@ -117,7 +124,7 @@ impl<'a> RecipeSelect<'a> {
                     ui.label(get_job_name(recipe.job_id, self.locale));
                 });
                 row.col(|ui| {
-                    ui.add(ItemNameLabel::new(recipe.item_id, false, self.locale));
+                    ui.add(ItemNameLabel::new(self.game_data, recipe.item_id, false, self.locale));
                 });
             });
         });
@@ -293,6 +300,7 @@ impl Widget for RecipeSelect<'_> {
                     );
                     ui.label(egui::RichText::new("Recipe").strong());
                     ui.add(ItemNameLabel::new(
+                        self.game_data,
                         self.recipe_config.recipe.item_id,
                         false,
                         self.locale,

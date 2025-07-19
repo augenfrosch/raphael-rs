@@ -1,4 +1,4 @@
-use raphael_data::{Locale, get_item_name};
+use raphael_data::{get_item_name, GameData, Locale};
 
 pub struct ItemNameLabel {
     item_id: u32,
@@ -6,10 +6,10 @@ pub struct ItemNameLabel {
 }
 
 impl ItemNameLabel {
-    pub fn new(item_id: u32, hq: bool, locale: Locale) -> Self {
+    pub fn new(game_data: &GameData, item_id: u32, hq: bool, locale: Locale) -> Self {
         Self {
             item_id,
-            text: get_item_name(item_id, hq, locale).unwrap_or("Unknown item".to_owned()),
+            text: get_item_name(game_data, item_id, hq, locale).unwrap_or("Unknown item".to_owned()),
         }
     }
 }

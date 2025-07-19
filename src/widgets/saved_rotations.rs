@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use raphael_data::{Consumable, CrafterStats, Locale, Recipe};
+use raphael_data::{Consumable, CrafterStats, GameData, Locale, Recipe};
 use raphael_sim::*;
 use serde::{Deserialize, Serialize};
 
@@ -30,6 +30,7 @@ pub enum RecipeInfo {
 
 impl RecipeInfo {
     pub fn create_from(
+        game_data: &GameData,
         recipe: &Recipe,
         custom_recipe_overrides_configuration: &CustomRecipeOverridesConfiguration,
     ) -> Self {
@@ -37,7 +38,7 @@ impl RecipeInfo {
             Self::CustomRecipe(*recipe, *custom_recipe_overrides_configuration)
         } else {
             Self::NormalRecipe(
-                raphael_data::RECIPES
+                game_data.recipes
                     .entries()
                     .find_map(|(recipe_id, recipe_entry)| {
                         if recipe_entry == recipe {
@@ -90,6 +91,7 @@ pub struct Rotation {
 
 impl Rotation {
     pub fn new(
+        game_data: &GameData,
         name: impl Into<String>,
         actions: Vec<Action>,
         recipe_config: &RecipeConfiguration,
@@ -112,13 +114,14 @@ impl Rotation {
                 false => "",
             },
         );
-        let initial_quality = crate::util::get_initial_quality(recipe_config, crafter_config);
+        let initial_quality = crate::util::get_initial_quality(game_data, recipe_config, crafter_config);
         Self {
             unique_id: generate_unique_rotation_id(),
             name: name.into(),
             solver: solver_params,
             actions,
             recipe_info: Some(RecipeInfo::create_from(
+                game_data,
                 &recipe_config.recipe,
                 custom_recipe_overrides_configuration,
             )),
@@ -254,6 +257,7 @@ impl SavedRotationsData {
 }
 
 struct RotationWidget<'a> {
+    game_data: &'a GameData<'a>,
     locale: Locale,
     config: &'a mut SavedRotationsConfig,
     pinned: &'a mut bool,
@@ -269,6 +273,7 @@ struct RotationWidget<'a> {
 
 impl<'a> RotationWidget<'a> {
     pub fn new(
+        game_data: &'a GameData,
         locale: Locale,
         config: &'a mut SavedRotationsConfig,
         pinned: &'a mut bool,
@@ -282,6 +287,7 @@ impl<'a> RotationWidget<'a> {
         selected_potion: &'a mut Option<Consumable>,
     ) -> Self {
         Self {
+            game_data,
             locale,
             config,
             pinned,
@@ -381,7 +387,7 @@ impl<'a> RotationWidget<'a> {
         if let Some(recipe_configuration) = &self.rotation.recipe_info {
             match recipe_configuration {
                 RecipeInfo::NormalRecipe(recipe_id) => {
-                    if let Some(recipe) = raphael_data::RECIPES.get(*recipe_id as usize) {
+                    if let Some(recipe) = self.game_data.recipes.get(*recipe_id as usize) {
                         *self.recipe_config = RecipeConfiguration {
                             recipe: *recipe,
                             quality_source: QualitySource::HqMaterialList([0; 6]),
@@ -434,7 +440,7 @@ impl<'a> RotationWidget<'a> {
 
     fn get_consumable_name(&self, consumable: Option<(u32, bool)>) -> String {
         match consumable {
-            Some((item_id, hq)) => raphael_data::get_item_name(item_id, hq, self.locale)
+            Some((item_id, hq)) => raphael_data::get_item_name(self.game_data, item_id, hq, self.locale)
                 .unwrap_or("Unknown item".to_owned()),
             None => "None".to_string(),
         }
@@ -458,7 +464,7 @@ impl<'a> RotationWidget<'a> {
             self.show_info_row(
                 ui,
                 "Recipe",
-                raphael_data::get_item_name(recipe.item_id, false, self.locale)
+                raphael_data::get_item_name(self.game_data, recipe.item_id, false, self.locale)
                     .unwrap_or("Unknown item".to_owned()),
             );
         }
@@ -492,7 +498,7 @@ impl<'a> RotationWidget<'a> {
             .as_ref()
             .and_then(|recipe_config| match recipe_config {
                 RecipeInfo::NormalRecipe(recipe_id) => {
-                    raphael_data::RECIPES.get(*recipe_id as usize)
+                    self.game_data.recipes.get(*recipe_id as usize)
                 }
                 RecipeInfo::CustomRecipe(recipe, _) => Some(recipe),
             })
@@ -519,6 +525,7 @@ impl egui::Widget for RotationWidget<'_> {
 }
 
 pub struct SavedRotationsWidget<'a> {
+    game_data: &'a GameData<'a>,
     locale: Locale,
     config: &'a mut SavedRotationsConfig,
     rotations: &'a mut SavedRotationsData,
@@ -532,6 +539,7 @@ pub struct SavedRotationsWidget<'a> {
 
 impl<'a> SavedRotationsWidget<'a> {
     pub fn new(
+        game_data: &'a GameData,
         locale: Locale,
         config: &'a mut SavedRotationsConfig,
         rotations: &'a mut SavedRotationsData,
@@ -543,6 +551,7 @@ impl<'a> SavedRotationsWidget<'a> {
         selected_potion: &'a mut Option<Consumable>,
     ) -> Self {
         Self {
+            game_data,
             locale,
             config,
             rotations,
@@ -605,6 +614,7 @@ impl egui::Widget for SavedRotationsWidget<'_> {
                     self.rotations.pinned.retain(|rotation| {
                         let mut deleted = false;
                         ui.add(RotationWidget::new(
+                            self.game_data,
                             self.locale,
                             self.config,
                             &mut true,
@@ -658,6 +668,7 @@ impl egui::Widget for SavedRotationsWidget<'_> {
                         let mut pinned = false;
                         let mut deleted = false;
                         ui.add(RotationWidget::new(
+                            self.game_data,
                             self.locale,
                             self.config,
                             &mut pinned,

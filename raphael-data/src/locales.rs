@@ -1,5 +1,7 @@
-use crate::{ITEM_NAMES_DE, ITEM_NAMES_EN, ITEM_NAMES_FR, ITEM_NAMES_JP, ITEM_NAMES_KR, ITEMS};
+// use crate::{ITEM_NAMES_DE, ITEM_NAMES_EN, ITEM_NAMES_FR, ITEM_NAMES_JP, ITEM_NAMES_KR, ITEMS};
 use raphael_sim::Action;
+
+use crate::GameData;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -40,15 +42,15 @@ pub fn get_job_name(job_id: u8, locale: Locale) -> &'static str {
     }
 }
 
-pub fn get_item_name(item_id: u32, hq: bool, locale: Locale) -> Option<String> {
+pub fn get_item_name(game_data: &GameData, item_id: u32, hq: bool, locale: Locale) -> Option<String> {
     let item_name = match locale {
-        Locale::EN => ITEM_NAMES_EN.get(item_id as usize)?.to_owned(),
-        Locale::DE => ITEM_NAMES_DE.get(item_id as usize)?.to_owned(),
-        Locale::FR => ITEM_NAMES_FR.get(item_id as usize)?.to_owned(),
-        Locale::JP => ITEM_NAMES_JP.get(item_id as usize)?.to_owned(),
-        Locale::KR => ITEM_NAMES_KR.get(item_id as usize)?.to_owned(),
+        Locale::EN => game_data.item_names_en.get(item_id as usize)?.to_owned(),
+        Locale::DE => game_data.item_names_de.get(item_id as usize)?.to_owned(),
+        Locale::FR => game_data.item_names_fr.get(item_id as usize)?.to_owned(),
+        Locale::JP => game_data.item_names_jp.get(item_id as usize)?.to_owned(),
+        Locale::KR => game_data.item_names_kr.get(item_id as usize)?.to_owned(),
     };
-    let item_entry = ITEMS.get(item_id as usize);
+    let item_entry = game_data.items.get(item_id as usize);
     let always_collectable = item_entry.is_some_and(|item| item.always_collectable);
     if !always_collectable {
         match hq {
@@ -58,6 +60,17 @@ pub fn get_item_name(item_id: u32, hq: bool, locale: Locale) -> Option<String> {
     } else {
         Some(format!("{} \u{e03d}", item_name))
     }
+}
+
+pub fn get_base_item_name(game_data: &GameData, item_id: u32, locale: Locale) -> Option<String> {
+    let item_name = match locale {
+        Locale::EN => game_data.item_names_en.get(item_id as usize)?.to_owned(),
+        Locale::DE => game_data.item_names_de.get(item_id as usize)?.to_owned(),
+        Locale::FR => game_data.item_names_fr.get(item_id as usize)?.to_owned(),
+        Locale::JP => game_data.item_names_jp.get(item_id as usize)?.to_owned(),
+        Locale::KR => game_data.item_names_kr.get(item_id as usize)?.to_owned(),
+    };
+    Some(format!("{item_name}"))
 }
 
 pub const fn action_name(action: Action, locale: Locale) -> &'static str {
