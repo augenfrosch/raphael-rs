@@ -1,6 +1,8 @@
 use non_contiguously_indexed_array::NciArrayData;
 
-pub const ITEM_NAME_DATA: non_contiguously_indexed_array::NciArrayData<&str, 1807, 10553> = NciArrayData{
+pub type ItemNameData<'a> = NciArrayData<&'a str, 1807, 10553>;
+
+pub const ITEM_NAME_DATA: ItemNameData = NciArrayData {
 	index_range_starting_indices: [
 		1602,
 		1607,
@@ -7561,13 +7563,13 @@ pub const ITEM_NAME_DATA: non_contiguously_indexed_array::NciArrayData<&str, 180
 		"Chemise de baroudeur en lin",
 		"Demi-trousses de baroudeur en lin",
 		"Bottes de baroudeur en cuir de sanglier",
-		"Figurine magitek d'un aéronef de type Bronco",
-		"Figurine magitek d'un aéronef de type Invincible",
-		"Figurine magitek d'un aéronef de type Entreprise",
-		"Figurine magitek d'un aéronef de type Invincible II",
-		"Figurine magitek d'un aéronef de type Odyssée",
-		"Figurine magitek d'un aéronef de type Tatanora",
-		"Figurine magitek d'un aéronef de type Viltgance",
+		"Figurine magitek d'un aéronef de pub type Bronco",
+		"Figurine magitek d'un aéronef de pub type Invincible",
+		"Figurine magitek d'un aéronef de pub type Entreprise",
+		"Figurine magitek d'un aéronef de pub type Invincible II",
+		"Figurine magitek d'un aéronef de pub type Odyssée",
+		"Figurine magitek d'un aéronef de pub type Tatanora",
+		"Figurine magitek d'un aéronef de pub type Viltgance",
 		"Figurine magitek de Sophia",
 		"Figurine magitek d'Alexander",
 		"Peluche de Calca",

@@ -76,7 +76,7 @@ fn export_recipes(recipes: &[Recipe]) {
     writeln!(writer, "").unwrap();
     writeln!(
         writer,
-        "type RecipeData = {};",
+        "pub type RecipeData = {};",
         nci_array_data_generator.build_type("Recipe")
     )
     .unwrap();
@@ -102,7 +102,7 @@ fn export_items(items: &[Item]) {
     writeln!(writer, "").unwrap();
     writeln!(
         writer,
-        "type ItemData = {};",
+        "pub type ItemData = {};",
         nci_array_data_generator.build_type("Item")
     )
     .unwrap();
@@ -150,8 +150,8 @@ fn export_item_names(item_names: &[ItemName], lang: &str) {
     writeln!(writer, "").unwrap();
     writeln!(
         writer,
-        "type ItemNameData = {};",
-        nci_array_data_generator.build_type("&str")
+        "pub type ItemNameData<'a> = {};",
+        nci_array_data_generator.build_type("&'a str")
     )
     .unwrap();
     writeln!(writer, "").unwrap();
@@ -237,7 +237,7 @@ async fn main() {
     item_names_de.retain(|item_name| necessary_items.contains(&item_name.id));
     item_names_fr.retain(|item_name| necessary_items.contains(&item_name.id));
     item_names_jp.retain(|item_name| necessary_items.contains(&item_name.id));
-    item_names_kr.retain(|item_name| necessary_items.contains(&item_name.id));
+    item_names_kr.retain(|item_name| necessary_items.contains(&item_name.id) && !item_name.name.is_empty());
 
     export_rlvls(&rlvls);
     export_level_adjust_table(&level_adjust_table_entries);

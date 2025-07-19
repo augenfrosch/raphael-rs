@@ -1,6 +1,8 @@
 use non_contiguously_indexed_array::NciArrayData;
 
-pub const ITEM_NAME_DATA: non_contiguously_indexed_array::NciArrayData<&str, 1807, 10553> = NciArrayData{
+pub type ItemNameData<'a> = NciArrayData<&'a str, 1807, 10553>;
+
+pub const ITEM_NAME_DATA: ItemNameData = NciArrayData {
 	index_range_starting_indices: [
 		1602,
 		1607,

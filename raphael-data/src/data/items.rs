@@ -1,7 +1,9 @@
 use non_contiguously_indexed_array::NciArrayData;
 use crate::Item;
 
-pub const ITEM_DATA: NciArrayData<Item, 1807, 10553> = NciArrayData{
+pub type ItemData = NciArrayData<Item, 1807, 10553>;
+
+pub const ITEM_DATA: ItemData = NciArrayData {
 	index_range_starting_indices: [
 		1602,
 		1607,
