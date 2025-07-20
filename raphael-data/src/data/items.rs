@@ -1,9 +1,10 @@
-use non_contiguously_indexed_array::NciArrayData;
+use non_contiguously_indexed_array::NciArray;
 use crate::Item;
 
-pub type ItemData = NciArrayData<Item, 1807, 10553>;
+pub type ItemData = NciArray<Item, 1807, 10553>;
 
-pub const ITEM_DATA: ItemData = NciArrayData {
+#[cfg(not(feature = "dynamically-load-game-data"))]
+pub const ITEMS: ItemData = NciArray {
 	index_range_starting_indices: [
 		1602,
 		1607,

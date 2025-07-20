@@ -23,9 +23,9 @@ fn preprocess_pattern(pattern: &str) -> String {
         .replace([HQ_ICON_CHAR, CL_ICON_CHAR], "")
 }
 
-pub fn find_recipes(game_data: &GameData, search_string: &str, locale: Locale) -> Vec<u32> {
+pub fn find_recipes(game_data: &GameData, search_string: &str, locale: Locale) -> Option<Vec<u32>> {
     let pattern = preprocess_pattern(search_string);
-    game_data.recipes
+    Some(game_data.recipes.as_ref()?
         .entries()
         .filter_map(|(recipe_id, recipe)| {
             let item_name = get_base_item_name(game_data, recipe.item_id, locale)?;
@@ -34,7 +34,7 @@ pub fn find_recipes(game_data: &GameData, search_string: &str, locale: Locale) -
                 false => None,
             }
         })
-        .collect()
+        .collect())
 }
 
 fn find_consumables(game_data: &GameData, search_string: &str, locale: Locale, consumables: &[Consumable]) -> Vec<usize> {

@@ -21,7 +21,7 @@ impl ComputerMut<(&SearchGameData<'_>, &str, Locale), Vec<usize>> for PotionFind
 type PotionSearchCache<'a> = FrameCache<Vec<usize>, PotionFinder>;
 
 pub struct PotionSelect<'a> {
-    game_data: &'a GameData<'a>,
+    game_data: &'a GameData,
     crafter_stats: CrafterStats,
     selected_consumable: &'a mut Option<Consumable>,
     locale: Locale,

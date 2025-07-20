@@ -44,13 +44,13 @@ pub fn get_job_name(job_id: u8, locale: Locale) -> &'static str {
 
 pub fn get_item_name(game_data: &GameData, item_id: u32, hq: bool, locale: Locale) -> Option<String> {
     let item_name = match locale {
-        Locale::EN => game_data.item_names_en.get(item_id as usize)?.to_owned(),
-        Locale::DE => game_data.item_names_de.get(item_id as usize)?.to_owned(),
-        Locale::FR => game_data.item_names_fr.get(item_id as usize)?.to_owned(),
-        Locale::JP => game_data.item_names_jp.get(item_id as usize)?.to_owned(),
-        Locale::KR => game_data.item_names_kr.get(item_id as usize)?.to_owned(),
+        Locale::EN => game_data.item_names_en.as_ref()?.get(item_id as usize)?.to_owned(),
+        Locale::DE => game_data.item_names_de.as_ref()?.get(item_id as usize)?.to_owned(),
+        Locale::FR => game_data.item_names_fr.as_ref()?.get(item_id as usize)?.to_owned(),
+        Locale::JP => game_data.item_names_jp.as_ref()?.get(item_id as usize)?.to_owned(),
+        Locale::KR => game_data.item_names_kr.as_ref()?.get(item_id as usize)?.to_owned(),
     };
-    let item_entry = game_data.items.get(item_id as usize);
+    let item_entry = game_data.items.as_ref()?.get(item_id as usize);
     let always_collectable = item_entry.is_some_and(|item| item.always_collectable);
     if !always_collectable {
         match hq {
@@ -64,11 +64,11 @@ pub fn get_item_name(game_data: &GameData, item_id: u32, hq: bool, locale: Local
 
 pub fn get_base_item_name(game_data: &GameData, item_id: u32, locale: Locale) -> Option<String> {
     let item_name = match locale {
-        Locale::EN => game_data.item_names_en.get(item_id as usize)?.to_owned(),
-        Locale::DE => game_data.item_names_de.get(item_id as usize)?.to_owned(),
-        Locale::FR => game_data.item_names_fr.get(item_id as usize)?.to_owned(),
-        Locale::JP => game_data.item_names_jp.get(item_id as usize)?.to_owned(),
-        Locale::KR => game_data.item_names_kr.get(item_id as usize)?.to_owned(),
+        Locale::EN => game_data.item_names_en.as_ref()?.get(item_id as usize)?.to_owned(),
+        Locale::DE => game_data.item_names_de.as_ref()?.get(item_id as usize)?.to_owned(),
+        Locale::FR => game_data.item_names_fr.as_ref()?.get(item_id as usize)?.to_owned(),
+        Locale::JP => game_data.item_names_jp.as_ref()?.get(item_id as usize)?.to_owned(),
+        Locale::KR => game_data.item_names_kr.as_ref()?.get(item_id as usize)?.to_owned(),
     };
     Some(format!("{item_name}"))
 }

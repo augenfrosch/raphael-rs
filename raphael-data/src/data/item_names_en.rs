@@ -1,8 +1,12 @@
-use non_contiguously_indexed_array::NciArrayData;
+use non_contiguously_indexed_array::NciArray;
 
-pub type ItemNameData<'a> = NciArrayData<&'a str, 1807, 10553>;
+#[cfg(not(feature = "dynamically-load-game-data"))]
+pub type ItemNameData = NciArray<&'static str, 1807, 10553>;
+#[cfg(feature = "dynamically-load-game-data")]
+pub type ItemNameDataGlobal = NciArray<String, 1807, 10553>;
 
-pub const ITEM_NAME_DATA: ItemNameData = NciArrayData {
+#[cfg(not(feature = "dynamically-load-game-data"))]
+pub const ITEM_NAMES_EN: ItemNameData = NciArray {
 	index_range_starting_indices: [
 		1602,
 		1607,

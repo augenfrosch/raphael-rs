@@ -18,14 +18,14 @@ struct RecipeFinder {}
 
 impl ComputerMut<(&SearchGameData<'_>, &str, Locale), Vec<u32>> for RecipeFinder {
     fn compute(&mut self, (search_game_data, text, locale): (&SearchGameData, &str, Locale)) -> Vec<u32> {
-        find_recipes(search_game_data.data, text, locale)
+        find_recipes(search_game_data.data, text, locale).unwrap_or_default()
     }
 }
 
 type SearchCache<'a> = FrameCache<Vec<u32>, RecipeFinder>;
 
 pub struct RecipeSelect<'a> {
-    game_data: &'a GameData<'a>,
+    game_data: &'a GameData,
     crafter_config: &'a mut CrafterConfig,
     recipe_config: &'a mut RecipeConfiguration,
     custom_recipe_overrides_config: &'a mut CustomRecipeOverridesConfiguration,
@@ -36,7 +36,7 @@ pub struct RecipeSelect<'a> {
 
 impl<'a> RecipeSelect<'a> {
     pub fn new(
-        game_data: &'a GameData<'a>,
+        game_data: &'a GameData,
         crafter_config: &'a mut CrafterConfig,
         recipe_config: &'a mut RecipeConfiguration,
         custom_recipe_overrides_config: &'a mut CustomRecipeOverridesConfiguration,
@@ -110,7 +110,7 @@ impl<'a> RecipeSelect<'a> {
         table.body(|body| {
             body.rows(line_height, search_result.len(), |mut row| {
                 let recipe_id = search_result[row.index()];
-                let recipe = self.game_data.recipes[recipe_id as usize];
+                let recipe = self.game_data.recipes.as_ref().unwrap()[recipe_id as usize];
                 row.col(|ui| {
                     if ui.button("Select").clicked() {
                         self.crafter_config.selected_job = recipe.job_id;

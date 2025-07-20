@@ -13,4 +13,4 @@ cp ./.cargo/config.toml ./.cargo/config.toml.backup
 cp ./.cargo/config_wasm.toml ./.cargo/config.toml
 trap "mv ./.cargo/config.toml.backup ./.cargo/config.toml" EXIT
 
-trunk serve index.html --release --features=dev-panel
+trunk serve index.html --release --features=dev-panel,dynamically-load-game-data --watch .gitignore --no-autoreload

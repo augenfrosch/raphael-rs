@@ -65,13 +65,14 @@ fn export_level_adjust_table(level_adjust_table_entries: &[LevelAdjustTableEntry
 }
 
 fn export_recipes(recipes: &[Recipe]) {
-    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayDataGenerator::new();
+    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayGenerator::new();
     for recipe in recipes {
         nci_array_data_generator.entry(recipe.id as usize, recipe);
     }
+    let rust_codegen = nci_array_data_generator.build(NCI_ARRAY_DARA_GENERATOR_RUST_CODEGEN_DEFAULT_CONFIG);
     let path = std::path::absolute("./raphael-data/src/data/recipes.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
+    writeln!(writer, "use non_contiguously_indexed_array::NciArray;").unwrap();
     writeln!(writer, "use crate::{{Recipe, Ingredient}};").unwrap();
     writeln!(writer, "").unwrap();
     writeln!(
@@ -81,23 +82,31 @@ fn export_recipes(recipes: &[Recipe]) {
     )
     .unwrap();
     writeln!(writer, "").unwrap();
+    writeln!(writer, "#[cfg(not(feature = \"dynamically-load-game-data\"))]").unwrap();
     writeln!(
         writer,
-        "pub const RECIPE_DATA: RecipeData = NciArrayData {};",
-        nci_array_data_generator.build(NCI_ARRAY_DARA_GENERATOR_RUST_CODEGEN_DEFAULT_CONFIG)
+        "pub const RECIPES: RecipeData = NciArray {rust_codegen};"
     )
     .unwrap();
     log::info!("recipes exported to \"{}\"", path.display());
+
+    let path =
+        std::path::absolute("./assets/data/recipes.ron").unwrap();
+    let mut writer = BufWriter::new(File::create(&path).unwrap());
+    let generated_ron = non_contiguously_indexed_array::built_rust_codegen_to(&rust_codegen, non_contiguously_indexed_array::OutputFormat::RON, Some(&["Recipe "]));
+    write!(writer, "{generated_ron}").unwrap();
+    log::info!("recipes RON exported to \"{}\"", path.display());
 }
 
 fn export_items(items: &[Item]) {
-    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayDataGenerator::new();
+    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayGenerator::new();
     for item in items {
         nci_array_data_generator.entry(item.id as usize, item);
     }
+    let rust_codegen = nci_array_data_generator.build(NCI_ARRAY_DARA_GENERATOR_RUST_CODEGEN_DEFAULT_CONFIG);
     let path = std::path::absolute("./raphael-data/src/data/items.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
+    writeln!(writer, "use non_contiguously_indexed_array::NciArray;").unwrap();
     writeln!(writer, "use crate::Item;").unwrap();
     writeln!(writer, "").unwrap();
     writeln!(
@@ -107,13 +116,20 @@ fn export_items(items: &[Item]) {
     )
     .unwrap();
     writeln!(writer, "").unwrap();
+    writeln!(writer, "#[cfg(not(feature = \"dynamically-load-game-data\"))]").unwrap();
     writeln!(
         writer,
-        "pub const ITEM_DATA: ItemData = NciArrayData {};",
-        nci_array_data_generator.build(NCI_ARRAY_DARA_GENERATOR_RUST_CODEGEN_DEFAULT_CONFIG)
+        "pub const ITEMS: ItemData = NciArray {rust_codegen};",
     )
     .unwrap();
     log::info!("items exported to \"{}\"", path.display());
+
+    let path =
+        std::path::absolute("./assets/data/items.ron").unwrap();
+    let mut writer = BufWriter::new(File::create(&path).unwrap());
+    let generated_ron = non_contiguously_indexed_array::built_rust_codegen_to(&rust_codegen, non_contiguously_indexed_array::OutputFormat::RON, Some(&["Item "]));
+    write!(writer, "{generated_ron}").unwrap();
+    log::info!("items RON exported to \"{}\"", path.display());
 }
 
 fn export_meals(consumables: &[Consumable]) {
@@ -139,32 +155,64 @@ fn export_potions(consumables: &[Consumable]) {
 }
 
 fn export_item_names(item_names: &[ItemName], lang: &str) {
-    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayDataGenerator::new();
+    let mut nci_array_data_generator = non_contiguously_indexed_array::NciArrayGenerator::new();
     for item_name in item_names {
         nci_array_data_generator.entry(item_name.id as usize, item_name.name.clone());
     }
+    let rust_codegen = nci_array_data_generator.build(non_contiguously_indexed_array::BuildConfiguration {
+            output_format: non_contiguously_indexed_array::OutputFormat::RustCodegen,
+            value_formatting: non_contiguously_indexed_array::ValueFormatting::Debug
+        });
     let path =
         std::path::absolute(format!("./raphael-data/src/data/item_names_{lang}.rs")).unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "use non_contiguously_indexed_array::NciArrayData;").unwrap();
+    writeln!(writer, "use non_contiguously_indexed_array::NciArray;").unwrap();
     writeln!(writer, "").unwrap();
+    writeln!(writer, "#[cfg(not(feature = \"dynamically-load-game-data\"))]").unwrap();
     writeln!(
         writer,
-        "pub type ItemNameData<'a> = {};",
-        nci_array_data_generator.build_type("&'a str")
+        "pub type ItemNameData = {};",
+        nci_array_data_generator.build_type("&'static str")
     )
     .unwrap();
+    match lang {
+        "en" => {
+            writeln!(writer, "#[cfg(feature = \"dynamically-load-game-data\")]").unwrap();
+            writeln!(
+                writer,
+                "pub type ItemNameDataGlobal = {};",
+                nci_array_data_generator.build_type("String")
+            )
+            .unwrap();
+        },
+        "kr" => {
+            writeln!(writer, "#[cfg(feature = \"dynamically-load-game-data\")]").unwrap();
+            writeln!(
+                writer,
+                "pub type ItemNameDataKR = {};",
+                nci_array_data_generator.build_type("String")
+            )
+            .unwrap();
+        },
+        _ => {},
+    }
+
     writeln!(writer, "").unwrap();
+    writeln!(writer, "#[cfg(not(feature = \"dynamically-load-game-data\"))]").unwrap();
     writeln!(
         writer,
-        "pub const ITEM_NAME_DATA: ItemNameData = NciArrayData {};",
-        nci_array_data_generator.build(non_contiguously_indexed_array::BuildConfiguration {
-            output_format: non_contiguously_indexed_array::OutputFormat::RustCodegen,
-            value_formatting: non_contiguously_indexed_array::ValueFormatting::Debug
-        })
+        "pub const ITEM_NAMES_{}: ItemNameData = NciArray {rust_codegen};",
+        lang.to_uppercase(),
     )
     .unwrap();
     log::info!("item names exported to \"{}\"", path.display());
+
+    let path =
+        std::path::absolute(format!("./assets/data/item_names_{lang}.ron")).unwrap();
+    let mut writer = BufWriter::new(File::create(&path).unwrap());
+    let generated_ron = non_contiguously_indexed_array::built_rust_codegen_to(&rust_codegen, non_contiguously_indexed_array::OutputFormat::RON, None);
+    write!(writer, "{generated_ron}").unwrap();
+    log::info!("item names RON exported to \"{}\"", path.display());
 }
 
 #[tokio::main]

@@ -44,7 +44,7 @@ struct DevPanelState {
     render_info_state: RenderInfoState,
 }
 
-pub struct MacroSolverApp<'a> {
+pub struct MacroSolverApp {
     locale: Locale,
     app_config: AppConfig,
     recipe_config: RecipeConfiguration,
@@ -60,7 +60,7 @@ pub struct MacroSolverApp<'a> {
     #[cfg(any(debug_assertions, feature = "dev-panel"))]
     dev_panel_state: DevPanelState,
 
-    game_data: raphael_data::GameData<'a>,
+    game_data: raphael_data::GameData,
 
     latest_version: Arc<Mutex<semver::Version>>,
     current_version: semver::Version,
@@ -80,7 +80,7 @@ pub struct MacroSolverApp<'a> {
     solver_interrupt: raphael_solver::AtomicFlag,
 }
 
-impl MacroSolverApp<'_> {
+impl MacroSolverApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let app_config = load(cc, "APP_CONFIG", AppConfig::default());
@@ -146,11 +146,13 @@ impl MacroSolverApp<'_> {
     }
 }
 
-impl eframe::App for MacroSolverApp<'_> {
+impl eframe::App for MacroSolverApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         #[cfg(target_arch = "wasm32")]
         self.load_fonts_dyn(ctx);
+        #[cfg(feature = "dynamically-load-game-data")]
+        self.load_game_data_dyn(ctx);
 
         self.process_solver_events();
 
@@ -529,7 +531,7 @@ impl eframe::App for MacroSolverApp<'_> {
     }
 }
 
-impl MacroSolverApp<'_> {
+impl MacroSolverApp {
     fn process_solver_events(&mut self) {
         let mut solver_events = self.solver_events.lock().unwrap();
         while let Some(event) = solver_events.pop_front() {
@@ -696,10 +698,9 @@ impl MacroSolverApp<'_> {
             self.selected_potion,
         );
         let initial_quality = util::get_initial_quality(&self.game_data, &self.recipe_config, &self.crafter_config);
-        let item = self.game_data.items
-            .get(self.recipe_config.recipe.item_id as usize)
-            .copied()
-            .unwrap_or_default();
+        let item = self.game_data.items.as_ref()
+            .map(|items| items.get(self.recipe_config.recipe.item_id as usize).copied())
+            .unwrap_or_default().unwrap_or_default();
         ui.add(Simulator::new(
             &game_settings,
             initial_quality,
@@ -870,7 +871,7 @@ impl MacroSolverApp<'_> {
             &mut self.recipe_config.quality_source
         {
             for (index, ingredient) in recipe_ingredients.into_iter().enumerate() {
-                if let Some(item) = self.game_data.items.get(ingredient.item_id as usize) {
+                if let Some(items) = self.game_data.items.as_ref() && let Some(item) = items.get(ingredient.item_id as usize) {
                     if item.can_be_hq {
                         has_hq_ingredient = true;
                         ui.horizontal(|ui| {
@@ -1170,6 +1171,109 @@ impl MacroSolverApp<'_> {
             );
             load_font_dyn(ctx, "NotoSansKR-Regular", uri);
         }
+    }
+
+    #[cfg(feature = "dynamically-load-game-data")]
+    fn load_game_data_dyn(&mut self, ctx: &egui::Context) {
+        self.load_item_data_dyn(ctx);
+
+        self.load_recipe_data_dyn(ctx);
+
+        self.load_item_name_data_dyn(ctx);
+    }
+
+    #[cfg(feature = "dynamically-load-game-data")]
+    fn load_item_data_dyn(&mut self, ctx: &egui::Context) {
+        #[cfg(target_arch = "wasm32")]
+        let uri = concat!(env!("BASE_URL"), "/data/items.ron");
+        #[cfg(not(target_arch = "wasm32"))]
+        let uri = "file://./assets/data/items.ron";
+        let id = egui::Id::new(format!("{} loaded", uri));
+        if ctx.data(|data| data.get_temp(id).unwrap_or(false)) {
+            return;
+        }
+        if let Ok(egui::load::BytesPoll::Ready { bytes, .. }) = ctx.try_load_bytes(uri) {
+            let item_data_deserialization_result = ron::de::from_bytes(&bytes);
+            match item_data_deserialization_result {
+                Ok(item_data) => {
+                    self.game_data.items = Some(item_data);
+
+                    ctx.data_mut(|data| *data.get_temp_mut_or_default(id) = true);
+                    log::debug!("Item Data loaded from: {}", uri);
+                },
+                Err(err) => log::debug!("Failed to deserialize data from {}. Error: {}", uri, err),
+            }
+        };
+    }
+
+    #[cfg(feature = "dynamically-load-game-data")]
+    fn load_recipe_data_dyn(&mut self, ctx: &egui::Context) {
+        #[cfg(target_arch = "wasm32")]
+        let uri = concat!(env!("BASE_URL"), "/data/recipes.ron");
+        #[cfg(not(target_arch = "wasm32"))]
+        let uri = "file://./assets/data/recipes.ron";
+        let id = egui::Id::new(format!("{} loaded", uri));
+        if ctx.data(|data| data.get_temp(id).unwrap_or(false)) {
+            return;
+        }
+        if let Ok(egui::load::BytesPoll::Ready { bytes, .. }) = *Box::new(ctx.try_load_bytes(uri)) {
+            let recipe_data_deserialization_result = ron::de::from_bytes(&bytes);
+            match recipe_data_deserialization_result {
+                Ok(recipe_data) => {
+                    self.game_data.recipes = Some(recipe_data);
+
+                    ctx.data_mut(|data| *data.get_temp_mut_or_default(id) = true);
+                    log::debug!("Recipe Data loaded from: {}", uri);
+                },
+                Err(err) => log::debug!("Failed to deserialize data from {}. Error: {}", uri, err),
+            }
+        };
+    }
+
+    #[cfg(feature = "dynamically-load-game-data")]
+    fn load_item_name_data_dyn(&mut self, ctx: &egui::Context) {
+        #[cfg(target_arch = "wasm32")]
+        let uri = format!("{}/data/item_names_{}.ron", env!("BASE_URL"), format!("{}", self.locale).to_lowercase());
+        #[cfg(not(target_arch = "wasm32"))]
+        let uri = format!("file://./assets/data/item_names_{}.ron", format!("{}", self.locale).to_lowercase());
+        let id = egui::Id::new(format!("{} loaded", uri));
+        if ctx.data(|data| data.get_temp(id).unwrap_or(false)) {
+            return;
+        }
+        if let Ok(egui::load::BytesPoll::Ready { bytes, .. }) = ctx.try_load_bytes(&uri) {
+            match self.locale {
+                Locale::KR => {
+                    let item_name_data_deserialization_result = ron::de::from_bytes(&bytes);
+                    match item_name_data_deserialization_result {
+                        Ok(item_name_data) => {
+                            self.game_data.item_names_kr = Some(item_name_data);
+
+                            ctx.data_mut(|data| *data.get_temp_mut_or_default(id) = true);
+                            log::debug!("Item Data loaded from: {}", uri);
+                        },
+                        Err(err) => log::debug!("Failed to deserialize data from {}. Error: {}", uri, err),
+                    }
+                },
+                _ => {
+                    let item_name_data_deserialization_result = ron::de::from_bytes(&bytes);
+                    match item_name_data_deserialization_result {
+                        Ok(item_name_data) => {
+                            match self.locale {
+                                Locale::EN => self.game_data.item_names_en = Some(item_name_data),
+                                Locale::DE => self.game_data.item_names_de = Some(item_name_data),
+                                Locale::FR => self.game_data.item_names_fr = Some(item_name_data),
+                                Locale::JP => self.game_data.item_names_jp = Some(item_name_data),
+                                Locale::KR => unreachable!(),
+                            };
+
+                            ctx.data_mut(|data| *data.get_temp_mut_or_default(id) = true);
+                            log::debug!("Item Data loaded from: {}", uri);
+                        },
+                        Err(err) => log::debug!("Failed to deserialize data from {}. Error: {}", uri, err),
+                    }
+                }
+            }    
+        };
     }
 }
 

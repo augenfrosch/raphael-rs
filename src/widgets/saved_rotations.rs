@@ -36,9 +36,9 @@ impl RecipeInfo {
     ) -> Self {
         if custom_recipe_overrides_configuration.use_custom_recipe {
             Self::CustomRecipe(*recipe, *custom_recipe_overrides_configuration)
-        } else {
+        } else if let Some(recipes) = game_data.recipes.as_ref() {
             Self::NormalRecipe(
-                game_data.recipes
+                recipes
                     .entries()
                     .find_map(|(recipe_id, recipe_entry)| {
                         if recipe_entry == recipe {
@@ -49,6 +49,9 @@ impl RecipeInfo {
                     })
                     .unwrap_or_default(),
             )
+        } else {
+            log::error!("Invalid state when creating RecipeInfo: recipe={:?}", recipe);
+            Self::NormalRecipe(0)
         }
     }
 }
@@ -257,7 +260,7 @@ impl SavedRotationsData {
 }
 
 struct RotationWidget<'a> {
-    game_data: &'a GameData<'a>,
+    game_data: &'a GameData,
     locale: Locale,
     config: &'a mut SavedRotationsConfig,
     pinned: &'a mut bool,
@@ -387,7 +390,8 @@ impl<'a> RotationWidget<'a> {
         if let Some(recipe_configuration) = &self.rotation.recipe_info {
             match recipe_configuration {
                 RecipeInfo::NormalRecipe(recipe_id) => {
-                    if let Some(recipe) = self.game_data.recipes.get(*recipe_id as usize) {
+                    if let Some(recipes) = self.game_data.recipes.as_ref()
+                        && let Some(recipe) = recipes.get(*recipe_id as usize) {
                         *self.recipe_config = RecipeConfiguration {
                             recipe: *recipe,
                             quality_source: QualitySource::HqMaterialList([0; 6]),
@@ -498,7 +502,7 @@ impl<'a> RotationWidget<'a> {
             .as_ref()
             .and_then(|recipe_config| match recipe_config {
                 RecipeInfo::NormalRecipe(recipe_id) => {
-                    self.game_data.recipes.get(*recipe_id as usize)
+                    self.game_data.recipes.as_ref()?.get(*recipe_id as usize)
                 }
                 RecipeInfo::CustomRecipe(recipe, _) => Some(recipe),
             })
@@ -525,7 +529,7 @@ impl egui::Widget for RotationWidget<'_> {
 }
 
 pub struct SavedRotationsWidget<'a> {
-    game_data: &'a GameData<'a>,
+    game_data: &'a GameData,
     locale: Locale,
     config: &'a mut SavedRotationsConfig,
     rotations: &'a mut SavedRotationsData,

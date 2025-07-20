@@ -21,7 +21,7 @@ impl ComputerMut<(&SearchGameData<'_>, &str, Locale), Vec<usize>> for FoodFinder
 type FoodSearchCache<'a> = FrameCache<Vec<usize>, FoodFinder>;
 
 pub struct FoodSelect<'a> {
-    game_data: &'a GameData<'a>,
+    game_data: &'a GameData,
     crafter_stats: CrafterStats,
     selected_consumable: &'a mut Option<Consumable>,
     locale: Locale,

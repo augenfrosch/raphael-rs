@@ -8,7 +8,6 @@ mod locales;
 pub use locales::*;
 
 mod search;
-use non_contiguously_indexed_array::NciArray;
 pub use search::*;
 
 #[rustfmt::skip]
@@ -79,43 +78,28 @@ pub const LEVEL_ADJUST_TABLE: &[u16] = include!("../data/level_adjust_table.rs")
 //pub static RECIPES: phf::OrderedMap<u32, Recipe> = include!("../data/recipes.rs");
 //pub const ITEMS: phf::OrderedMap<u32, Item> = include!("../data/items.rs");
 
-pub struct GameData<'a> {
-    pub recipe_data: Option<RecipeData>,
-    pub item_data: Option<ItemData>,
+#[derive(Debug)]
+pub struct GameData {
+    pub recipes: Option<RecipeData>,
+    pub items: Option<ItemData>,
 
-    pub item_name_data_en: Option<ItemNameDataGlobal<'a>>,
-    pub item_name_data_de: Option<ItemNameDataGlobal<'a>>,
-    pub item_name_data_fr: Option<ItemNameDataGlobal<'a>>,
-    pub item_name_data_jp: Option<ItemNameDataGlobal<'a>>,
-    pub item_name_data_kr: Option<ItemNameDataKR<'a>>,
-
-    pub recipes: NciArray<'a, Recipe>,
-    pub items: NciArray<'a, Item>,
-
-    pub item_names_en: NciArray<'a, &'a str>,
-    pub item_names_de: NciArray<'a, &'a str>,
-    pub item_names_fr: NciArray<'a, &'a str>,
-    pub item_names_jp: NciArray<'a, &'a str>,
-    pub item_names_kr: NciArray<'a, &'a str>,
+    pub item_names_en: Option<ItemNameDataGlobal>,
+    pub item_names_de: Option<ItemNameDataGlobal>,
+    pub item_names_fr: Option<ItemNameDataGlobal>,
+    pub item_names_jp: Option<ItemNameDataGlobal>,
+    pub item_names_kr: Option<ItemNameDataKR>,
 }
 
-impl Default for GameData<'_> {
+impl Default for GameData {
     fn default() -> Self {
         Self {
-            recipe_data: None,
-            item_data: None,
-            item_name_data_en: None,
-            item_name_data_de: None,
-            item_name_data_fr: None,
-            item_name_data_jp: None,
-            item_name_data_kr: None,
-            recipes: NciArray::new(&[], &[], &[]),
-            items: NciArray::new(&[], &[], &[]),
-            item_names_en: NciArray::new(&[], &[], &[]),
-            item_names_de: NciArray::new(&[], &[], &[]),
-            item_names_fr: NciArray::new(&[], &[], &[]),
-            item_names_jp: NciArray::new(&[], &[], &[]),
-            item_names_kr: NciArray::new(&[], &[], &[]),
+            recipes: None,
+            items: None,
+            item_names_en: None,
+            item_names_de: None,
+            item_names_fr: None,
+            item_names_jp: None,
+            item_names_kr: None,
         }
     }
 }
@@ -210,7 +194,7 @@ pub fn get_initial_quality(
         .ingredients
         .iter()
         .filter_map(|ingredient| {
-            Some((*game_data.items.get(ingredient.item_id as usize)?, ingredient.amount))
+            Some((*game_data.items.as_ref()?.get(ingredient.item_id as usize)?, ingredient.amount))
         })
         .collect();
 

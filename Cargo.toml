@@ -106,4 +106,6 @@ overflow-checks = true
 csbindgen = { git = "https://github.com/Cysharp/csbindgen.git", rev = "refs/pull/103/head" }
 
 [features]
+default = ["dynamically-load-game-data"]
+dynamically-load-game-data = ["raphael-data/dynamically-load-game-data", "egui_extras/file"] # TODO remove unnecessary deps/features
 dev-panel = []
