@@ -31,12 +31,21 @@ impl SheetData for Item {
 
 impl std::fmt::Display for Item {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Item {{ ")?;
-        write!(f, "item_level: {}, ", self.item_level)?;
-        write!(f, "can_be_hq: {}, ", self.can_be_hq)?;
-        write!(f, "always_collectable: {}, ", self.always_collectable)?;
-        write!(f, "}}")?;
-        Ok(())
+        if !f.alternate() {
+            write!(f, "Item {{ ")?;
+            write!(f, "item_level: {}, ", self.item_level)?;
+            write!(f, "can_be_hq: {}, ", self.can_be_hq)?;
+            write!(f, "always_collectable: {}, ", self.always_collectable)?;
+            write!(f, "}}")?;
+            Ok(())
+        } else {
+            write!(f, "(")?;
+            write!(f, "item_level:{},", self.item_level)?;
+            write!(f, "can_be_hq:{},", self.can_be_hq)?;
+            write!(f, "always_collectable:{},", self.always_collectable)?;
+            write!(f, ")")?;
+            Ok(())
+        }
     }
 }
 

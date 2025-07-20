@@ -23,8 +23,15 @@ pub fn item_name_data_loaded(game_data: &GameData, locale: Locale) -> bool {
     }
 }
 
-pub fn recipe_data_loaded(game_data: &GameData, _locale: Locale) -> bool {
+pub fn recipe_data_loaded(game_data: &GameData, locale: Locale) -> bool {
     game_data.recipes.is_some()
+        && match locale {
+            Locale::EN => game_data.item_names_en.is_some(),
+            Locale::DE => game_data.item_names_de.is_some(),
+            Locale::FR => game_data.item_names_fr.is_some(),
+            Locale::JP => game_data.item_names_jp.is_some(),
+            Locale::KR => game_data.item_names_kr.is_some(),
+        }
 }
 
 pub fn collapse_persisted(ui: &mut egui::Ui, id: egui::Id, collapsed: &mut bool) {

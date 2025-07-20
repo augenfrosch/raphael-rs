@@ -79,33 +79,64 @@ impl SheetData for Recipe {
 
 impl std::fmt::Display for Recipe {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Recipe {{ ")?;
-        write!(f, "job_id: {}, ", self.job_id)?;
-        write!(f, "item_id: {}, ", self.item_id)?;
-        write!(f, "max_level_scaling: {}, ", self.max_level_scaling)?;
-        write!(f, "recipe_level: {}, ", self.recipe_level)?;
-        write!(f, "progress_factor: {}, ", self.progress_factor)?;
-        write!(f, "quality_factor: {}, ", self.quality_factor)?;
-        write!(f, "durability_factor: {}, ", self.durability_factor)?;
-        write!(f, "material_factor: {}, ", self.material_factor)?;
-        write!(f, "ingredients: [")?;
-        for ingredient in self
-            .ingredients
-            .iter()
-            .chain(repeat(&Ingredient::default()))
-            .take(6)
-        {
-            write!(
-                f,
-                "Ingredient {{ item_id: {}, amount: {} }}, ",
-                ingredient.item_id, ingredient.amount
-            )?;
+        if !f.alternate() {
+            write!(f, "Recipe {{ ")?;
+            write!(f, "job_id: {}, ", self.job_id)?;
+            write!(f, "item_id: {}, ", self.item_id)?;
+            write!(f, "max_level_scaling: {}, ", self.max_level_scaling)?;
+            write!(f, "recipe_level: {}, ", self.recipe_level)?;
+            write!(f, "progress_factor: {}, ", self.progress_factor)?;
+            write!(f, "quality_factor: {}, ", self.quality_factor)?;
+            write!(f, "durability_factor: {}, ", self.durability_factor)?;
+            write!(f, "material_factor: {}, ", self.material_factor)?;
+            write!(f, "ingredients: [")?;
+            for ingredient in self
+                .ingredients
+                .iter()
+                .chain(repeat(&Ingredient::default()))
+                .take(6)
+            {
+                write!(
+                    f,
+                    "Ingredient {{ item_id: {}, amount: {} }}, ",
+                    ingredient.item_id, ingredient.amount
+                )?;
+            }
+            write!(f, "], ")?;
+            write!(f, "is_expert: {}, ", self.is_expert)?;
+            write!(f, "req_craftsmanship: {}, ", self.req_craftsmanship)?;
+            write!(f, "req_control: {}, ", self.req_control)?;
+            write!(f, "}}")?;
+            Ok(())
+        } else {
+            write!(f, "(")?;
+            write!(f, "job_id:{},", self.job_id)?;
+            write!(f, "item_id:{},", self.item_id)?;
+            write!(f, "max_level_scaling:{},", self.max_level_scaling)?;
+            write!(f, "recipe_level:{},", self.recipe_level)?;
+            write!(f, "progress_factor:{},", self.progress_factor)?;
+            write!(f, "quality_factor:{},", self.quality_factor)?;
+            write!(f, "durability_factor:{},", self.durability_factor)?;
+            write!(f, "material_factor:{},", self.material_factor)?;
+            write!(f, "ingredients:(")?;
+            for ingredient in self
+                .ingredients
+                .iter()
+                .chain(repeat(&Ingredient::default()))
+                .take(6)
+            {
+                write!(
+                    f,
+                    "(item_id:{},amount:{}),",
+                    ingredient.item_id, ingredient.amount
+                )?;
+            }
+            write!(f, "),")?;
+            write!(f, "is_expert:{},", self.is_expert)?;
+            write!(f, "req_craftsmanship:{},", self.req_craftsmanship)?;
+            write!(f, "req_control:{},", self.req_control)?;
+            write!(f, ")")?;
+            Ok(())
         }
-        write!(f, "], ")?;
-        write!(f, "is_expert: {}, ", self.is_expert)?;
-        write!(f, "req_craftsmanship: {}, ", self.req_craftsmanship)?;
-        write!(f, "req_control: {}, ", self.req_control)?;
-        write!(f, "}}")?;
-        Ok(())
     }
 }

@@ -1249,7 +1249,7 @@ impl MacroSolverApp {
                             self.game_data.item_names_kr = Some(item_name_data);
 
                             ctx.data_mut(|data| *data.get_temp_mut_or_default(id) = true);
-                            log::debug!("Item Data loaded from: {}", uri);
+                            log::debug!("Item Name Data loaded from: {}", uri);
                         },
                         Err(err) => log::debug!("Failed to deserialize data from {}. Error: {}", uri, err),
                     }
@@ -1267,7 +1267,7 @@ impl MacroSolverApp {
                             };
 
                             ctx.data_mut(|data| *data.get_temp_mut_or_default(id) = true);
-                            log::debug!("Item Data loaded from: {}", uri);
+                            log::debug!("Item Name Data loaded from: {}", uri);
                         },
                         Err(err) => log::debug!("Failed to deserialize data from {}. Error: {}", uri, err),
                     }

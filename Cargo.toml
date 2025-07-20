@@ -37,6 +37,8 @@ version = "0.22.0"
 edition = "2024"
 default-run = "raphael-xiv"
 
+build = "src/build.rs"
+
 [lints]
 workspace = true
 
