@@ -4,6 +4,15 @@ use std::{fs::File, io::BufWriter};
 
 use raphael_data_updater::*;
 
+const DEFAULT_BUILD_CONFIGUATION: BuildConfiguration = BuildConfiguration {
+    output_format: OutputFormat::RustCodegen,
+    value_formatting: ValueFormatting::Display,
+};
+const ITEM_NAME_BUILD_CONFIGURATION: BuildConfiguration = BuildConfiguration {
+    output_format: OutputFormat::RustCodegen,
+    value_formatting: ValueFormatting::Debug,
+};
+
 async fn fetch_and_parse<T: SheetData>(lang: &str) -> Vec<T> {
     const XIV_API: &str = "https://v2.xivapi.com/api";
     let mut rows = Vec::new();
@@ -53,24 +62,34 @@ fn export_level_adjust_table(level_adjust_table_entries: &[LevelAdjustTableEntry
 }
 
 fn export_recipes(recipes: &[Recipe]) {
-    let mut phf_map = phf_codegen::OrderedMap::new();
+    let mut phf_map = NciArrayGenerator::new();
     for recipe in recipes {
-        phf_map.entry(recipe.id, &format!("{recipe}"));
+        phf_map.entry(recipe.id, recipe);
     }
     let path = std::path::absolute("./raphael-data/data/recipes.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(
+        writer,
+        "NciArray {}",
+        phf_map.build(DEFAULT_BUILD_CONFIGUATION)
+    )
+    .unwrap();
     log::info!("recipes exported to \"{}\"", path.display());
 }
 
 fn export_items(items: &[Item]) {
-    let mut phf_map = phf_codegen::OrderedMap::new();
+    let mut phf_map = NciArrayGenerator::new();
     for item in items {
-        phf_map.entry(item.id, &format!("{item}"));
+        phf_map.entry(item.id, item);
     }
     let path = std::path::absolute("./raphael-data/data/items.rs").unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(
+        writer,
+        "NciArray {}",
+        phf_map.build(DEFAULT_BUILD_CONFIGUATION)
+    )
+    .unwrap();
     log::info!("items exported to \"{}\"", path.display());
 }
 
@@ -97,13 +116,18 @@ fn export_potions(consumables: &[Consumable]) {
 }
 
 fn export_item_names(item_names: &[ItemName], lang: &str) {
-    let mut phf_map = phf_codegen::Map::new();
+    let mut phf_map = NciArrayGenerator::new();
     for item_name in item_names {
-        phf_map.entry(item_name.id, &format!("\"{}\"", item_name.name));
+        phf_map.entry(item_name.id, item_name.name.clone());
     }
     let path = std::path::absolute(format!("./raphael-data/data/item_names_{lang}.rs")).unwrap();
     let mut writer = BufWriter::new(File::create(&path).unwrap());
-    writeln!(writer, "{}", phf_map.build()).unwrap();
+    writeln!(
+        writer,
+        "NciArray {}",
+        phf_map.build(ITEM_NAME_BUILD_CONFIGURATION)
+    )
+    .unwrap();
     log::info!("item names exported to \"{}\"", path.display());
 }
 

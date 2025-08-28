@@ -13,6 +13,11 @@ pub use item::{Item, ItemName};
 mod consumable;
 pub use consumable::{Consumable, ItemAction, ItemFood, instantiate_consumables};
 
+mod non_contiguously_indexed_array_generator;
+pub use non_contiguously_indexed_array_generator::{
+    BuildConfiguration, NciArrayGenerator, OutputFormat, ValueFormatting,
+};
+
 pub trait SheetData: Sized {
     const SHEET: &'static str;
     const REQUIRED_FIELDS: &[&str];
