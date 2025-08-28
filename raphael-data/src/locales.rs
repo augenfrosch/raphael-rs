@@ -46,13 +46,13 @@ pub const ITEM_NAMES_KR: NciArray<&str> = include!("../data/item_names_kr.rs");
 
 pub fn get_item_name(item_id: u32, hq: bool, locale: Locale) -> Option<String> {
     let item_name = match locale {
-        Locale::EN => ITEM_NAMES_EN.get(&item_id)?.to_owned(),
-        Locale::DE => ITEM_NAMES_DE.get(&item_id)?.to_owned(),
-        Locale::FR => ITEM_NAMES_FR.get(&item_id)?.to_owned(),
-        Locale::JP => ITEM_NAMES_JP.get(&item_id)?.to_owned(),
-        Locale::KR => ITEM_NAMES_KR.get(&item_id)?.to_owned(),
+        Locale::EN => ITEM_NAMES_EN.get(item_id)?.to_owned(),
+        Locale::DE => ITEM_NAMES_DE.get(item_id)?.to_owned(),
+        Locale::FR => ITEM_NAMES_FR.get(item_id)?.to_owned(),
+        Locale::JP => ITEM_NAMES_JP.get(item_id)?.to_owned(),
+        Locale::KR => ITEM_NAMES_KR.get(item_id)?.to_owned(),
     };
-    let item_entry = ITEMS.get(&item_id);
+    let item_entry = ITEMS.get(item_id);
     let always_collectable = item_entry.is_some_and(|item| item.always_collectable);
     if !always_collectable {
         match hq {
