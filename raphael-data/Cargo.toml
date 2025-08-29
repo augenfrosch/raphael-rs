@@ -12,5 +12,13 @@ crate-type = ["rlib"]
 raphael-sim = { workspace = true }
 serde = { version = "1.0.215", features = ["derive"], optional = true }
 
+[dev-dependencies]
+criterion = "0.5.1"
+rand = "0.9.1"
+
 [features]
 serde = ["dep:serde", "raphael-sim/serde"]
+
+[[bench]]
+name = "bench_game_data"
+harness = false
